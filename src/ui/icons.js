@@ -1,0 +1,63 @@
+// Pixel icons drawn from ASCII so they sit on the same grid as the scene.
+function icon(rows, label = '') {
+  const h = rows.length;
+  const w = rows[0].length;
+  let rects = '';
+  rows.forEach((row, y) => {
+    let x = 0;
+    while (x < w) {
+      if (row[x] === '#') {
+        let run = 1;
+        while (row[x + run] === '#') run++;
+        rects += `<rect x="${x}" y="${y}" width="${run}" height="1"/>`;
+        x += run;
+      } else x++;
+    }
+  });
+  return `<svg class="pix" viewBox="0 0 ${w} ${h}" style="--w:${w};--h:${h}" shape-rendering="crispEdges" fill="currentColor" ${label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"'}>${rects}</svg>`;
+}
+
+export const ICONS = {
+  bird: icon([
+    '.....###..',
+    '....#.####',
+    '....#####.',
+    '.########.',
+    '#########.',
+    '.#######..',
+    '...#..#...',
+    '##########',
+  ]),
+  prev: icon(['......#', '....###', '..#####', '#######', '..#####', '....###', '......#']),
+  next: icon(['#......', '###....', '#####..', '#######', '#####..', '###....', '#......']),
+  skip: icon([
+    '#...#...#',
+    '##..##..#',
+    '###.###.#',
+    '#########',
+    '###.###.#',
+    '##..##..#',
+    '#...#...#',
+  ]),
+  note: icon([
+    '...#####',
+    '...#...#',
+    '...#...#',
+    '...#...#',
+    '.###.###',
+    '####.###',
+    '.##...#.',
+  ]),
+  rain: icon([
+    '...###...',
+    '.##...##.',
+    '#.......#',
+    '#########',
+    '.........',
+    '.#..#..#.',
+    '#..#..#..',
+  ]),
+  full: icon(['###.###', '#.....#', '#.....#', '.......', '#.....#', '#.....#', '###.###']),
+  close: icon(['#...#', '.#.#.', '..#..', '.#.#.', '#...#']),
+  play: icon(['#....', '###..', '#####', '###..', '#....']),
+};

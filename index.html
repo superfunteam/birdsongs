@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Birdsongs · lofi melodies on the wire</title>
+    <meta name="description" content="A lofi pixel-art radio: birds land on power lines and every landing and take-off plays a note of a song you know. With rain." />
+    <meta name="theme-color" content="#0b0a14" />
+    <meta property="og:title" content="Birdsongs" />
+    <meta property="og:description" content="Lofi melodies on the wire. Every bird is a note." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&family=Silkscreen&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="stage" aria-label="Pixel-art birds landing on and leaving power lines; each one plays a note"></canvas>
+
+    <div id="intro" class="intro">
+      <div class="intro-card">
+        <div class="kicker">a lofi radio for the wires</div>
+        <h1 class="title">birdsongs</h1>
+        <p class="tagline">every landing is a note. every take-off, another.</p>
+        <button id="start" class="start" type="button"><span class="ico"></span><span class="blink">tap to listen</span></button>
+        <p class="hint">headphones on · rain included</p>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <div id="flash" class="flash" aria-live="polite"></div>
+
+    <div id="dock" class="dock">
+      <div id="panel" class="panel" hidden>
+        <div class="panel-head">
+          <div class="kicker">now playing</div>
+          <button id="hide-ui" class="icon-btn" type="button" title="Hide everything (H)" aria-label="Hide controls"></button>
+        </div>
+        <div id="song-title" class="song-title">…</div>
+        <div id="song-meta" class="song-meta"></div>
+
+        <div class="toggles">
+          <button id="t-music" class="toggle" type="button" aria-pressed="true" title="Music (M)"><span class="ico"></span><span class="lbl">music</span><span class="box"></span></button>
+          <button id="t-sound" class="toggle" type="button" aria-pressed="true" title="Weather & wings (S)"><span class="ico"></span><span class="lbl">sounds</span><span class="box"></span></button>
+        </div>
+
+        <label class="vol">
+          <span class="lbl">vol</span>
+          <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" />
+        </label>
+
+        <div class="scene-row">
+          <button id="scene-prev" class="icon-btn" type="button" title="Previous scene (←)" aria-label="Previous scene"></button>
+          <div class="scene-name"><span class="kicker">scene</span><span id="scene-name"></span></div>
+          <button id="scene-next" class="icon-btn" type="button" title="Next scene (→)" aria-label="Next scene"></button>
+        </div>
+
+        <div class="actions">
+          <button id="skip" class="text-btn" type="button" title="Next song (N)"><span>next song</span></button>
+          <button id="fullscreen" class="text-btn" type="button" title="Fullscreen (F)"><span>full</span></button>
+        </div>
+        <div class="keys">M music · S sounds · H hide<br />←→ scene · N next song · F full</div>
+      </div>
+
+      <div class="bar">
+        <span class="viewers" title="People listening right now"><span class="dot"></span><span id="viewers">1</span><span class="lbl">listening</span></span>
+        <button id="dock-toggle" class="dock-toggle" type="button" aria-expanded="false" aria-controls="panel" title="Settings" aria-label="Settings"></button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
