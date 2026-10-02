@@ -29,6 +29,16 @@ export class Conductor {
     this.gapAt = null;
   }
 
+  // add a song after start-up (MIDI renditions load asynchronously);
+  // it plays next so you hear it straight away
+  addSong(song) {
+    const parsed = parseSong(song);
+    if (!parsed.noteCount) throw new Error('No notes');
+    this.songs.push(parsed);
+    this.order.splice(this.orderPos + 1, 0, this.songs.length - 1);
+    return parsed;
+  }
+
   shuffled() {
     const idx = this.songs.map((_, i) => i);
     for (let i = idx.length - 1; i > 0; i--) {

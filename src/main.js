@@ -5,7 +5,8 @@ import { WEATHER } from './world/atmosphere.js';
 import { SCENES } from './world/scenes.js';
 import { AudioEngine } from './audio/engine.js';
 import { Conductor } from './music/conductor.js';
-import { SONGS } from './music/songs.js';
+import { SONGS, MIDI_SONGS } from './music/songs.js';
+import { loadMidiSong, readMidi, arrangeMidi } from './music/midi.js';
 import { SPECIES } from './world/species.js';
 import { Controls, loadSettings } from './ui/controls.js';
 import { startPresence } from './ui/presence.js';
@@ -154,6 +155,13 @@ window.addEventListener('resize', () => {
   }, 120);
 });
 
+// ------------------------------------------------------------------ MIDI renditions
+for (const meta of MIDI_SONGS) {
+  loadMidiSong(meta)
+    .then((song) => conductor.addSong(song))
+    .catch(() => console.info(`[birdsongs] "${meta.title}" skipped: no MIDI at ${meta.midi}`));
+}
+
 // ------------------------------------------------------------------ listeners
 startPresence((n) => ui.setViewers(n));
 
@@ -165,6 +173,12 @@ window.birdsongs = {
   setScene: (i) => stage.setScene(i, clock(), true),
   setTime: (tod) => {
     stage.sceneStart = clock() - ((((tod - stage.current.start) % 1) + 1) % 1) * DAY_LENGTH;
+  },
+  // try a MIDI rendition without deploying it: birdsongs.addMidi(arrayBuffer, { title, ... })
+  addMidi: (buffer, meta = {}) => {
+    const song = conductor.addSong({ id: `midi-${Date.now()}`, title: 'MIDI test', composer: '', year: '', instrument: 'kalimba', repeat: 1, ...meta, ...arrangeMidi(readMidi(buffer), meta) });
+    conductor.skip(clock());
+    return { title: song.title, notes: song.noteCount, seconds: Math.round(song.duration), bpm: song.bpm };
   },
   setWeather: (name) => {
     const a = stage.atmo;

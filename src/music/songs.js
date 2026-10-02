@@ -336,3 +336,27 @@ export const SONGS = [
     `,
   },
 ];
+
+// Songs arranged at load time from a MIDI file you have the rights to.
+// Drop the file at the given path (under public/) and it joins the rotation;
+// if the file isn't there the song is quietly skipped. See src/music/midi.js.
+//   track       which MIDI track holds the tune (default: guessed)
+//   tempoScale  how much slower than the file's own tempo (0.6 = 60%)
+//   breath      extra sixteenths of silence after each phrase
+//   maxBars     how much of the file to use
+//   center      MIDI note the melody is moved to sit around (72 = C5)
+export const MIDI_SONGS = [
+  {
+    id: 'worried-shoes',
+    title: 'Worried Shoes',
+    composer: 'Daniel Johnston',
+    year: 1983,
+    midi: '/songs/worried-shoes.mid',
+    instrument: 'kalimba',
+    tempoScale: 0.6,
+    breath: 4,
+    maxBars: 64,
+    center: 72,
+    repeat: 1,
+  },
+];

@@ -36,6 +36,20 @@ netlify dev
 
 Five public-domain pieces: Für Elise (arranged very slow, with breaths at phrase ends, on a felt-piano "plunk"), Gymnopédie No. 1, Canon in D, Brahms' Lullaby and Clair de lune. Plus two originals written by Claude for this project: **Little Wire Waltz** (music box) and **Pocket Full of Rain** (kalimba).
 
+### Songs from MIDI (licensed songs)
+
+Songs you have the rights to can be added as MIDI files, so nobody has to retype a score. List the song in `MIDI_SONGS` in `src/music/songs.js`, then drop the file at its path under `public/`. "Worried Shoes" (Daniel Johnston) is already listed, waiting for `public/songs/worried-shoes.mid`.
+
+At load time `src/music/midi.js` arranges the file into a Birdsongs rendition:
+
+1. It finds the melody: the highest, most single-line track, reduced to its top voice.
+2. It works out where the downbeats are and guesses one chord per bar from the accompaniment.
+3. It slows the tune down (`tempoScale`), moves it into the music-box octave (`center`), and adds a breath after each phrase (`breath`).
+
+A file that's missing is skipped quietly.
+
+To try a MIDI without deploying it, run this in the console: `birdsongs.addMidi(await (await fetch(url)).arrayBuffer(), { title: '…' })`.
+
 ### Settings
 
 The bird button in the corner opens the panel:
