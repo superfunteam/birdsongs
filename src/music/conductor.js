@@ -25,6 +25,8 @@ export class Conductor {
     this.orderPos = 0;
     this.play = null;
     this.announced = null;
+    this.onGap = null; // fires in the quiet between two songs
+    this.gapAt = null;
   }
 
   shuffled() {
@@ -123,6 +125,7 @@ export class Conductor {
     // near the end of a song the next one is already lined up: start it, don't skip it
     if (this.play && now < this.play.startTime) this.begin(this.play.songIndex, at);
     else this.nextSong(at);
+    this.gapAt = now;
   }
 
   // the scene changed and its birds are gone: keep every planned note, but
@@ -149,6 +152,7 @@ export class Conductor {
         p.eventIdx = 0;
         if (p.loop >= (song.repeat || 1)) {
           const end = p.startTime + p.loop * song.duration;
+          this.gapAt = end + 0.8;
           this.nextSong(end + SONG_GAP);
           continue;
         }
@@ -160,6 +164,11 @@ export class Conductor {
       p.eventIdx++;
       if (time < now - 0.05) continue; // fell behind (e.g. background tab)
       this.planEvent(song, ev, time, p.loop * song.lengthUnits + ev.start, now);
+    }
+
+    if (this.gapAt != null && now >= this.gapAt) {
+      this.gapAt = null;
+      this.onGap?.();
     }
 
     // announce the song when its first note actually plays

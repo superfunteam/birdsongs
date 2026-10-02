@@ -42,6 +42,10 @@
         <div class="toggles">
           <button id="t-music" class="toggle" type="button" aria-pressed="true" title="Music (M)"><span class="ico"></span><span class="lbl">music</span><span class="box"></span></button>
           <button id="t-sound" class="toggle" type="button" aria-pressed="true" title="Weather & wings (S)"><span class="ico"></span><span class="lbl">sounds</span><span class="box"></span></button>
+          <button id="t-notes" class="toggle" type="button" aria-pressed="true" title="Show a little note when a bird plays (T)"><span class="ico"></span><span class="lbl">notes</span><span class="box"></span></button>
+          <button id="t-silhouette" class="toggle" type="button" aria-pressed="false" title="Silhouette mode (O)"><span class="ico"></span><span class="lbl">silhouette</span><span class="box"></span></button>
+          <button id="t-shuffle" class="toggle" type="button" aria-pressed="false" title="Shuffle the wires every song (W)"><span class="ico"></span><span class="lbl">shuffle</span><span class="box"></span></button>
+          <button id="t-full" class="toggle" type="button" aria-pressed="false" title="Fullscreen (F)"><span class="ico"></span><span class="lbl">full</span><span class="box"></span></button>
         </div>
 
         <label class="vol">
@@ -49,17 +53,22 @@
           <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" />
         </label>
 
-        <div class="scene-row">
+        <div class="picker">
           <button id="scene-prev" class="icon-btn" type="button" title="Previous scene (←)" aria-label="Previous scene"></button>
-          <div class="scene-name"><span class="kicker">scene</span><span id="scene-name"></span></div>
+          <div class="picker-name"><span class="kicker">scene</span><span id="scene-name"></span></div>
           <button id="scene-next" class="icon-btn" type="button" title="Next scene (→)" aria-label="Next scene"></button>
+        </div>
+        <div class="picker">
+          <button id="bird-prev" class="icon-btn" type="button" title="Previous bird (shift+B)" aria-label="Previous kind of bird"></button>
+          <div class="picker-name"><span class="kicker">birds</span><span id="bird-name"></span></div>
+          <button id="bird-next" class="icon-btn" type="button" title="Next bird (B)" aria-label="Next kind of bird"></button>
         </div>
 
         <div class="actions">
           <button id="skip" class="text-btn" type="button" title="Next song (N)"><span>next song</span></button>
-          <button id="fullscreen" class="text-btn" type="button" title="Fullscreen (F)"><span>full</span></button>
+          <button id="reshuffle" class="text-btn" type="button" title="New wires (R)" hidden><span>new wires</span></button>
         </div>
-        <div class="keys">M music · S sounds · H hide<br />←→ scene · N next song · F full</div>
+        <div class="keys">M music · S sounds · T notes<br />O silhouette · B birds<br />W shuffle · R new wires<br />←→ scene · N song · H hide · F full</div>
       </div>
 
       <div class="bar">

@@ -14,6 +14,7 @@ export class Flock {
     this.birds = [];
     this.nextId = 1;
     this.rain = 0;
+    this.onNote = null;
   }
 
   get lines() {
@@ -116,6 +117,18 @@ export class Flock {
     return this.canTurn(bird, now) && this.isFree(bird.wire, x, bird.radius, now, bird);
   }
 
+  // switch every bird on screen to one kind (or back to the scene's mix)
+  setKind(weights) {
+    const v = this.view;
+    for (const b of this.birds) {
+      if (b.gone) continue;
+      const id = this.pickSpecies(weights, b.wire / Math.max(1, v.wires - 1));
+      if (id === b.speciesId && this.stage.birdKind !== 'mixed') continue;
+      b.setSpecies(id, v.birdScale);
+      if (b.loadOn) this.lines.setLoad(b.id, b.wire, b.x, b.size);
+    }
+  }
+
   // the wires moved (resize): keep each bird at the same place relative to the poles
   rescale(ratio, birdScale) {
     const v = this.view;
@@ -133,6 +146,8 @@ export class Flock {
   }
 
   pickSpecies(weights, pitchNorm) {
+    const kind = this.stage.birdKind;
+    if (kind && kind !== 'mixed' && SPECIES[kind]) return kind;
     const entries = Object.entries(weights);
     let total = 0;
     const ws = entries.map(([id, w]) => {
@@ -286,12 +301,17 @@ export class Flock {
       const perched = b.isPerched(now);
       if (perched !== b.loadOn) {
         b.loadOn = perched;
+        // these transitions happen exactly when the bird's note sounds
         if (perched) {
           lines.setLoad(b.id, b.wire, b.x, b.size);
-          lines.pluck(b.wire, b.x, -0.11 * b.size);
+          lines.pluck(b.wire, b.x, -0.13 * b.size);
+          this.onNote?.(b, 'land', now);
         } else {
           lines.removeLoad(b.id, b.wire);
-          if (!b.aborted) lines.pluck(b.wire, b.x, 0.09 * b.size);
+          if (!b.aborted) {
+            lines.pluck(b.wire, b.x, 0.11 * b.size);
+            this.onNote?.(b, 'depart', now);
+          }
         }
       }
       if (now >= b.spawnTime) b.update(now, Math.min(dt, 0.1), this);

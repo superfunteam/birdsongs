@@ -22,51 +22,53 @@
 export const SONGS = [
   // ---------------------------------------------------------------------------
   // Für Elise: A (with repeat) - B (C major episode) - A
+  // Arranged very slow and sparse: phrase-ending notes are held and followed by
+  // breaths, so bars no longer sum to 3/8 on purpose (the parser doesn't mind).
   {
     id: 'fur-elise',
     title: 'Für Elise',
     composer: 'Ludwig van Beethoven',
     year: 1810,
-    bpm: 52,
+    bpm: 22,
     timeSig: '3/8',
-    instrument: 'musicbox',
-    repeat: 2,
+    instrument: 'plunk',
+    repeat: 1,
     score: `
       E5:1 D#5:1 |
       E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 |
-      [Am] A4:2 r:1 C4:1 E4:1 A4:1 |
-      [E] B4:2 r:1 E4:1 G#4:1 B4:1 |
-      [Am] C5:2 r:1 E4:1 E5:1 D#5:1 |
+      [Am] A4:3 r:1 C4:1 E4:1 A4:1 |
+      [E] B4:3 r:1 E4:1 G#4:1 B4:1 |
+      [Am] C5:3 r:2 E4:1 E5:1 D#5:1 |
       E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 |
-      [Am] A4:2 r:1 C4:1 E4:1 A4:1 |
-      [E] B4:2 r:1 E4:1 C5:1 B4:1 |
-      [Am] A4:2 r:2 E5:1 D#5:1 |
+      [Am] A4:3 r:1 C4:1 E4:1 A4:1 |
+      [E] B4:3 r:1 E4:1 C5:1 B4:1 |
+      [Am] A4:6 r:4 E5:1 D#5:1 |
 
       E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 |
-      [Am] A4:2 r:1 C4:1 E4:1 A4:1 |
-      [E] B4:2 r:1 E4:1 G#4:1 B4:1 |
-      [Am] C5:2 r:1 E4:1 E5:1 D#5:1 |
+      [Am] A4:3 r:1 C4:1 E4:1 A4:1 |
+      [E] B4:3 r:1 E4:1 G#4:1 B4:1 |
+      [Am] C5:3 r:2 E4:1 E5:1 D#5:1 |
       E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 |
-      [Am] A4:2 r:1 C4:1 E4:1 A4:1 |
-      [E] B4:2 r:1 E4:1 C5:1 B4:1 |
-      [Am] A4:2 r:1 B4:1 C5:1 D5:1 |
+      [Am] A4:3 r:1 C4:1 E4:1 A4:1 |
+      [E] B4:3 r:1 E4:1 C5:1 B4:1 |
+      [Am] A4:4 r:3 B4:1 C5:1 D5:1 |
 
-      [C] E5:3 G4:1 F5:1 E5:1 |
-      [G] D5:3 F4:1 E5:1 D5:1 |
-      [Am] C5:3 E4:1 D5:1 C5:1 |
-      [E] B4:2 r:1 E4:1 E5:1 r:1 |
-      r:1 E5:1 E6:1 D#5:1 E5:1 D#5:1 |
-      E5:1 D#5:1 E5:1 D#5:1 E5:1 D#5:1 |
+      [C] E5:4 G4:1 F5:1 E5:1 |
+      [G] D5:4 F4:1 E5:1 D5:1 |
+      [Am] C5:4 E4:1 D5:1 C5:1 |
+      [E] B4:4 r:3 E4:1 E5:1 r:1 |
+      r:1 E5:1 E6:2 D#5:1 E5:1 D#5:1 |
+      E5:1 D#5:1 E5:1 D#5:2 E5:1 D#5:1 |
 
       E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 |
-      [Am] A4:2 r:1 C4:1 E4:1 A4:1 |
-      [E] B4:2 r:1 E4:1 G#4:1 B4:1 |
-      [Am] C5:2 r:1 E4:1 E5:1 D#5:1 |
+      [Am] A4:3 r:1 C4:1 E4:1 A4:1 |
+      [E] B4:3 r:1 E4:1 G#4:1 B4:1 |
+      [Am] C5:3 r:2 E4:1 E5:1 D#5:1 |
       E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 |
-      [Am] A4:2 r:1 C4:1 E4:1 A4:1 |
-      [E] B4:2 r:1 E4:1 C5:1 B4:1 |
-      [Am] A4:6 |
-      r:4 |
+      [Am] A4:3 r:1 C4:1 E4:1 A4:1 |
+      [E] B4:4 r:1 E4:1 C5:2 B4:2 |
+      [Am] A4:12 |
+      r:6 |
     `,
   },
 
@@ -239,6 +241,98 @@ export const SONGS = [
       [Gb] r:2 Eb5:2 F5:2 Eb5:6 Db5:6 |
       [Db7/Ab] r:2 Db5:2 Eb5:2 Bb5:3 Ab5:6 F5:3 |
       [Bbsus4] F5:2 Eb5:2 F5:2 Eb5:3 [Bbm] Db5:6 Bb4:3 |
+    `,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Original compositions by Claude, written for this project.
+  {
+    id: 'little-wire-waltz',
+    title: 'Little Wire Waltz',
+    composer: 'Claude',
+    year: 2026,
+    bpm: 50,
+    timeSig: '3/4',
+    instrument: 'musicbox',
+    repeat: 1,
+    score: `
+      [F] C5:4 A4:4 C5:4 |
+      [Bb] D5:8 C5:4 |
+      [F] A4:4 F4:4 A4:4 |
+      [C] G4:12 |
+      [Dm] A4:4 D5:4 F5:4 |
+      [Bbmaj7] E5:4 D5:4 C5:4 |
+      [Gm7] Bb4:4 A4:4 G4:4 |
+      [C7] C5:12 |
+
+      [F] C5:4 A4:4 C5:4 |
+      [Bb] F5:8 E5:4 |
+      [Dm] D5:4 A4:4 D5:4 |
+      [Am] C5:12 |
+      [Bb] D5:4 C5:4 Bb4:4 |
+      [F/A] A4:4 G4:4 F4:4 |
+      [C7] G4:6 A4:2 Bb4:4 |
+      [F] A4:12 |
+
+      [Dm] F5:6 E5:2 D5:4 |
+      [Am] C5:12 |
+      [Bb] D5:6 C5:2 Bb4:4 |
+      [F] A4:12 |
+      [Gm7] Bb4:4 A4:4 G4:4 |
+      [Am7] C5:4 E5:4 G5:4 |
+      [Bbmaj7] F5:8 E5:4 |
+      [C7] r:12 |
+
+      [F] C5:4 A4:4 C5:4 |
+      [Bb] D5:8 C5:4 |
+      [F] A4:4 F4:4 A4:4 |
+      [C] G4:12 |
+      [Bb] D5:4 C5:4 Bb4:4 |
+      [F/A] A4:4 G4:4 F4:4 |
+      [C7] G4:6 E4:2 G4:4 |
+      [F] F4:12 |
+      r:12 |
+    `,
+  },
+  {
+    id: 'pocket-full-of-rain',
+    title: 'Pocket Full of Rain',
+    composer: 'Claude',
+    year: 2026,
+    bpm: 62,
+    timeSig: '4/4',
+    instrument: 'kalimba',
+    repeat: 1,
+    score: `
+      [Am] E5:6 A4:2 C5:4 E5:4 |
+      D5:12 r:4 |
+      [Fmaj7] C5:6 A4:2 C5:4 E5:4 |
+      G5:8 E5:8 |
+      [C] G5:6 E5:2 D5:4 C5:4 |
+      E5:12 r:4 |
+      [G] D5:6 B4:2 D5:4 G5:4 |
+      E5:8 D5:8 |
+      [Am] A4:16 |
+      r:16 |
+
+      [Dm7] F5:4 r:2 E5:2 D5:4 C5:4 |
+      A4:12 r:4 |
+      [Am] C5:4 r:2 B4:2 A4:4 E4:4 |
+      A4:12 r:4 |
+      [Fmaj7] A4:4 C5:4 E5:4 A5:4 |
+      G5:12 r:4 |
+      [E7] G#5:4 r:2 E5:2 D5:4 B4:4 |
+      G#4:16 |
+
+      [Am] E5:6 A4:2 C5:4 E5:4 |
+      D5:12 r:4 |
+      [Fmaj7] C5:6 A4:2 C5:4 E5:4 |
+      A5:8 G5:8 |
+      [C] E5:6 D5:2 C5:4 G4:4 |
+      [G] B4:8 D5:8 |
+      [Am] A4:16 |
+      [Am] r:16 |
+      r:8 |
     `,
   },
 ];

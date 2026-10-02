@@ -21,6 +21,11 @@ const MATS = {
   ceramic: toon('#cfcac0'),
   black: toon('#1c1c20'),
 };
+for (const m of Object.values(MATS)) m.userData.base = m.color.clone();
+
+export function setPoleSilhouette(on, color) {
+  for (const m of Object.values(MATS)) m.color.copy(on ? color : m.userData.base);
+}
 
 let haloTex = null;
 function haloTexture() {
@@ -103,7 +108,8 @@ export class PowerLines {
 
     for (const x of xs) {
       const opts = layout.poleOpts?.get(x) || {};
-      const pole = this.buildPole(x, layout.heights, opts);
+      const lift = this.lift(x);
+      const pole = this.buildPole(x, layout.heights.map((h) => h + lift), opts);
       this.group.add(pole);
       this.poles.push(pole);
     }
@@ -213,12 +219,19 @@ export class PowerLines {
     return null;
   }
 
+  // poles can stand higher or lower (shuffled layouts), tilting their spans
+  lift(x) {
+    return this.layout.poleLift?.get(x) || 0;
+  }
+
   baseY(w, x) {
     const wire = this.wires[w];
     const s = this.span(x);
     if (!s) return wire.attach;
     const len = s.b - s.a;
-    return wire.attach - wire.sag * (len / this.layout.refSpan) * 4 * s.u * (1 - s.u);
+    const la = this.lift(s.a);
+    const lb = this.lift(s.b);
+    return wire.attach + la + (lb - la) * s.u - wire.sag * (len / this.layout.refSpan) * 4 * s.u * (1 - s.u);
   }
 
   // full displaced height at x

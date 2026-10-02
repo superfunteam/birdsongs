@@ -415,16 +415,21 @@ body.ui-hidden.idle {
   border-radius: 0;
 }
 
-.scene-row {
+.picker {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 8px;
+}
+
+.picker:first-of-type,
+.vol + .picker {
   margin-top: 12px;
   padding-top: 10px;
   border-top: 2px dashed var(--edge);
 }
 
-.scene-name {
+.picker-name {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -448,6 +453,10 @@ body.ui-hidden.idle {
   display: flex;
   gap: 6px;
   margin-top: 10px;
+}
+
+.text-btn[hidden] {
+  display: none;
 }
 
 .text-btn {

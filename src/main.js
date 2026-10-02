@@ -6,6 +6,7 @@ import { SCENES } from './world/scenes.js';
 import { AudioEngine } from './audio/engine.js';
 import { Conductor } from './music/conductor.js';
 import { SONGS } from './music/songs.js';
+import { SPECIES } from './world/species.js';
 import { Controls, loadSettings } from './ui/controls.js';
 import { startPresence } from './ui/presence.js';
 
@@ -32,6 +33,17 @@ audio.volume = settings.volume * settings.volume;
 let conductor = null;
 let ui = null;
 
+// bird picker: the scene's mix, or one kind everywhere
+const BIRDS = [
+  { id: 'mixed', label: 'all kinds' },
+  ...Object.entries(SPECIES).map(([id, sp]) => ({ id, label: sp.name.endsWith('ch') ? `${sp.name}es` : `${sp.name}s` })),
+];
+if (!BIRDS.some((b) => b.id === settings.bird)) settings.bird = 'mixed';
+stage.birdKind = settings.bird;
+stage.shuffle = settings.shuffle;
+stage.pips.enabled = settings.notes;
+if (settings.silhouette) stage.setSilhouette(true);
+
 stage.setScene(settings.scene, clock(), true);
 
 conductor = new Conductor({
@@ -44,6 +56,9 @@ conductor = new Conductor({
 conductor.start(clock());
 
 stage.onThunder = ({ near, delay }) => audio.thunder(near, delay);
+stage.onWiresChanged = () => conductor.resetForScene(clock());
+// shuffle mode: a fresh set of wires in the hush between songs
+conductor.onGap = () => stage.reshuffle(clock());
 stage.onSceneApplied = (scene) => {
   conductor?.resetForScene(clock());
   ui?.setScene(stage.sceneIndex);
@@ -64,11 +79,21 @@ ui = new Controls({
     }
     conductor.restart(clock());
   },
-  onMusic: (on) => audio.setMusic(on),
-  onSound: (on) => audio.setSound(on),
+  birds: BIRDS,
+  onToggle: (key, on) => {
+    if (key === 'music') audio.setMusic(on);
+    else if (key === 'sound') audio.setSound(on);
+    else if (key === 'notes') {
+      stage.pips.enabled = on;
+      if (!on) stage.pips.clear();
+    } else if (key === 'silhouette') stage.setSilhouette(on);
+    else if (key === 'shuffle') stage.setShuffle(on, clock());
+  },
   onVolume: (v) => audio.setVolume(v),
   onScene: (delta) => stage.setScene(stage.sceneIndex + delta, clock()),
+  onBird: (id) => stage.setBirdKind(id),
   onSkip: () => conductor.skip(clock()),
+  onReshuffle: () => stage.reshuffle(clock()),
 });
 ui.setScene(stage.sceneIndex);
 
@@ -112,7 +137,6 @@ setInterval(() => {
       storm: w.storm,
       wind: w.wind,
       snow: w.snow,
-      night: stage.atmo.night,
       scene: stage.current,
     });
   }

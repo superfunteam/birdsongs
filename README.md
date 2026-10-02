@@ -28,9 +28,25 @@ netlify dev
 | Birds | `src/world/bird.js`, `species.js` | Procedural low-poly 3D rigs: body, head, beak, crest, two-segment wings, forked or fan tail, legs. Plumage comes from per-face vertex colours with toon shading. Every pose is computed from time: approach, landing flare, settle, idle (look, preen, flick, fluff, stretch, hop-turn, shuffle), crouch, take-off. |
 | Wires | `src/world/powerlines.js` | Catenary spans between detailed poles. Perched birds weigh their span down, and every landing or take-off plucks the wire so it visibly rings. |
 | Music → birds | `src/music/conductor.js` | Plans the score 3.8 s ahead so a landing bird can start its flight early and touch down exactly on the beat. It also keeps the bird population near a target. |
-| Songs | `src/music/songs.js` | Five public-domain melodies (see below). |
-| Sound | `src/audio/engine.js` | All synthesised: music box, celesta, kalimba and Rhodes voices, a tape wow/flutter, saturation and reverb chain, vinyl crackle, rain layers, gusting wind, waves, crickets, thunder, and the occasional quiet wing flutter. |
+| Songs | `src/music/songs.js` | Public-domain melodies and two originals (see below). |
+| Sound | `src/audio/engine.js` | All synthesised: music box, celesta, kalimba, felt-piano plunk and Rhodes voices, a tape wow/flutter, saturation and reverb chain, vinyl crackle, rain layers, gusting wind, waves, thunder, and the occasional soft wing flap. |
 | Viewer count | `netlify/functions/presence.mjs` | Each tab sends a heartbeat every 25 s. Heartbeats go into 30-second buckets in Netlify Blobs, and anyone seen in the last one or two buckets counts as listening. |
+
+### Songs
+
+Five public-domain pieces: Für Elise (arranged very slow, with breaths at phrase ends, on a felt-piano "plunk"), Gymnopédie No. 1, Canon in D, Brahms' Lullaby and Clair de lune. Plus two originals written by Claude for this project: **Little Wire Waltz** (music box) and **Pocket Full of Rain** (kalimba).
+
+### Settings
+
+The bird button in the corner opens the panel:
+
+- **Music** and **sounds** (weather and wing flaps) toggles, plus volume.
+- **Notes**: a tiny pixel ♪ rises from each bird the moment it plays.
+- **Silhouette**: birds, poles and wires go solid black against the sky.
+- **Shuffle**: a fresh random set of wires and poles (3–6 wires, 1–3 poles, slopes and slack vary), re-dealt in the quiet between songs. **New wires** reshuffles on demand.
+- **Scene** and **birds** pickers: the birds picker chooses the scene's own mix or a single kind everywhere.
+
+Settings are remembered per browser.
 
 ### Adding a song
 
@@ -44,11 +60,11 @@ r:4       a rest
 |         bar line, for readability
 ```
 
-Stick to public-domain melodies. Most well-known film scores are still under copyright.
+Stick to public-domain melodies (or ones you have rights to). Most well-known film scores and modern songs are still under copyright. Bars don't have to add up, so you can stretch notes and add rests for breathing room.
 
 ### Keys
 
-`M` music · `S` sounds · `←/→` scene · `N` next song · `H` hide the UI · `F` fullscreen
+`M` music · `S` sounds · `T` notes · `O` silhouette · `B` / `shift+B` birds · `W` shuffle wires · `R` new wires · `←/→` scene · `N` next song · `H` hide the UI · `F` fullscreen
 
 ### Debugging
 

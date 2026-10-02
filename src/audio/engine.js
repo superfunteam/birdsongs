@@ -3,7 +3,7 @@
 //   voices ─ lowpass ─ wow/flutter ─ tape saturation ─┬─ dry ──┐
 //                                                     └─ reverb ┴─ musicGate ─┐
 //   vinyl crackle ───────────────────────────────────────────────────────────┤
-//   rain / wind / waves / crickets / thunder / wing flaps ─── ambGate ────────┼─ master ─ compressor ─ out
+//   rain / wind / waves / thunder / wing flaps ─────────── ambGate ────────┼─ master ─ compressor ─ out
 
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -101,34 +101,6 @@ function rainDropsBuffer(ctx, seconds) {
   return buf;
 }
 
-function cricketBuffer(ctx, seconds) {
-  const len = Math.floor(ctx.sampleRate * seconds);
-  const sr = ctx.sampleRate;
-  const buf = ctx.createBuffer(2, len, sr);
-  const L = buf.getChannelData(0);
-  const R = buf.getChannelData(1);
-  for (let c = 0; c < 4; c++) {
-    const f = rand(3900, 5200);
-    const period = rand(0.55, 0.95);
-    const pulses = 2 + Math.floor(Math.random() * 3);
-    const amp = rand(0.05, 0.16);
-    const pan = Math.random();
-    for (let t0 = rand(0, period); t0 < seconds - 0.3; t0 += period * rand(0.9, 1.1)) {
-      for (let p = 0; p < pulses; p++) {
-        const start = Math.floor((t0 + p * 0.032) * sr);
-        const n = Math.floor(0.018 * sr);
-        for (let i = 0; i < n; i++) {
-          const env = Math.sin((Math.PI * i) / n);
-          const s = Math.sin((2 * Math.PI * f * i) / sr) * env * amp;
-          L[start + i] += s * (1 - pan * 0.6);
-          R[start + i] += s * (0.4 + pan * 0.6);
-        }
-      }
-    }
-  }
-  return buf;
-}
-
 function tapeCurve() {
   const n = 1024;
   const c = new Float32Array(n);
@@ -152,6 +124,15 @@ const PATCHES = {
     partials: [[1, 1, 1], [2, 0.3, 0.45], [3, 0.09, 0.25], [4, 0.07, 0.18], [7.1, 0.035, -0.09]],
     click: 0.025,
     gain: 0.2,
+  },
+  // soft felt-piano plunk: warm, a little detuned, quick upper partials
+  plunk: {
+    decay: (f) => clamp(3.4 * Math.pow(392 / f, 0.4), 1.6, 6),
+    partials: [[1, 1, 1], [1.0035, 0.45, 0.85], [2, 0.3, 0.42], [3, 0.1, 0.25], [4.02, 0.05, -0.14]],
+    attack: 0.009,
+    thump: 0.1,
+    thumpFreq: 210,
+    gain: 0.21,
   },
   kalimba: {
     decay: (f) => clamp(3.8 * Math.pow(523 / f, 0.4), 1.5, 6),
@@ -284,7 +265,6 @@ export class AudioEngine {
     loop(this.pink, [this.windFilter], 'wind');
     loop(this.brown, [filt('lowpass', 620)], 'waves');
     loop(this.pink, [filt('bandpass', 1600, 0.5)], 'wash');
-    loop(cricketBuffer(ctx, 7), [], 'crickets');
     loop(this.brown, [filt('lowpass', 110)], 'city');
 
     this.gust = 0;
@@ -344,9 +324,10 @@ export class AudioEngine {
       }
       const g = ctx.createGain();
       const peak = amp * vel * patch.gain;
+      const atk = patch.attack || 0.0035;
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(peak, t + 0.0035);
-      g.gain.setTargetAtTime(0, t + 0.0035, d60 / 6.9);
+      g.gain.linearRampToValueAtTime(peak, t + atk);
+      g.gain.setTargetAtTime(0, t + atk, d60 / 6.9);
       osc.connect(g).connect(out);
       osc.start(t);
       const stop = t + d60 * 1.15 + 0.05;
@@ -358,7 +339,7 @@ export class AudioEngine {
     }
     if (lastOsc) lastOsc.onended = () => out.disconnect();
     if (patch.click) this.noiseTick(t, patch.click * vel, 3800, 0.006, out);
-    if (patch.thump) this.noiseTick(t, patch.thump * vel, 380, 0.02, out);
+    if (patch.thump) this.noiseTick(t, patch.thump * vel, patch.thumpFreq || 380, 0.02, out);
   }
 
   rhodes(midi, t, vel, pan) {
@@ -428,32 +409,42 @@ export class AudioEngine {
     if (this.soundOn && ev.flap) this.flap(Math.max(this.ctx.currentTime + 0.005, t + ev.flap.offset), ev.pan, ev.flap.size);
   }
 
-  // a quick, quiet flutter of wings
+  // a few soft wingbeats: each one a short "fwup" of low noise whose
+  // cutoff sweeps down, like air pushed by a wing
   flap(t, pan, size = 1) {
     const ctx = this.ctx;
-    const src = ctx.createBufferSource();
-    src.buffer = this.white;
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = rand(700, 1300) / Math.sqrt(size);
-    bp.Q.value = 0.8;
-    const g = ctx.createGain();
-    g.gain.value = 0;
     const p = ctx.createStereoPanner();
     p.pan.value = clamp(pan, -0.9, 0.9);
-    const n = 3 + Math.floor(Math.random() * 4);
-    const rate = rand(11, 17) / Math.sqrt(size);
-    const peak = rand(0.025, 0.06);
-    for (let i = 0; i < n; i++) {
+    p.connect(this.ambGate);
+    const beats = 2 + Math.floor(Math.random() * 3);
+    const rate = rand(6.5, 9.5) / Math.sqrt(size);
+    const top = rand(900, 1400) / Math.sqrt(size);
+    const peak = rand(0.06, 0.11);
+    let last = null;
+    for (let i = 0; i < beats; i++) {
       const ti = t + i / rate;
-      const a = peak * (1 - i / (n + 1));
+      const len = 0.11 * Math.sqrt(size);
+      const src = ctx.createBufferSource();
+      src.buffer = this.pink;
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.Q.value = 0.6;
+      lp.frequency.setValueAtTime(top, ti);
+      lp.frequency.exponentialRampToValueAtTime(220, ti + len);
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 90;
+      const g = ctx.createGain();
+      const a = peak * (1 - i / (beats + 1.5));
       g.gain.setValueAtTime(0.0001, ti);
-      g.gain.linearRampToValueAtTime(a, ti + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, ti + 0.6 / rate);
+      g.gain.linearRampToValueAtTime(a, ti + 0.018);
+      g.gain.exponentialRampToValueAtTime(0.0001, ti + len);
+      src.connect(lp).connect(hp).connect(g).connect(p);
+      src.start(ti, Math.random() * 5);
+      src.stop(ti + len + 0.02);
+      last = src;
     }
-    src.connect(bp).connect(g).connect(p).connect(this.ambGate);
-    src.start(t, Math.random());
-    src.stop(t + n / rate + 0.1);
+    if (last) last.onended = () => p.disconnect();
   }
 
   thunder(near, delay) {
@@ -497,7 +488,7 @@ export class AudioEngine {
 
   // ------------------------------------------------------------ ambience
   // called ~10x/second with the current weather + scene
-  updateAmbience(now, { rain, storm, wind, snow, night, scene }) {
+  updateAmbience(now, { rain, storm, wind, snow, scene }) {
     if (!this.ctx) return;
     const ctx = this.ctx;
     const t = ctx.currentTime;
@@ -520,8 +511,6 @@ export class AudioEngine {
     set('waves', waves * (0.05 + 0.2 * swell), 0.5);
     set('wash', waves * 0.06 * Math.pow(swell, 3), 0.4);
 
-    const crickets = (a.meadow ? 0.6 : 0.25) * Math.pow(night, 1.5) * (1 - Math.min(1, rain * 2)) * (a.hush ? 0 : 1);
-    set('crickets', crickets * 0.5, 2);
     set('city', (a.city || 0) * 0.08, 2);
   }
 }

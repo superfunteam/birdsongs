@@ -2,12 +2,22 @@ import { ICONS } from './icons.js';
 
 const KEY = 'birdsongs:settings';
 
+export const DEFAULTS = {
+  music: true,
+  sound: true,
+  notes: true,
+  silhouette: false,
+  shuffle: false,
+  volume: 0.8,
+  scene: 0,
+  bird: 'mixed',
+};
+
 export function loadSettings() {
-  const defaults = { music: true, sound: true, volume: 0.8, scene: 0 };
   try {
-    return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
   } catch {
-    return defaults;
+    return { ...DEFAULTS };
   }
 }
 
@@ -21,22 +31,32 @@ export function saveSettings(s) {
 
 const $ = (id) => document.getElementById(id);
 
+// toggle buttons → setting keys (+ the label used in the little flash message)
+const TOGGLES = [
+  { id: 't-music', key: 'music', icon: 'note', label: 'music' },
+  { id: 't-sound', key: 'sound', icon: 'rain', label: 'sounds' },
+  { id: 't-notes', key: 'notes', icon: 'pip', label: 'notes' },
+  { id: 't-silhouette', key: 'silhouette', icon: 'silhouette', label: 'silhouette' },
+  { id: 't-shuffle', key: 'shuffle', icon: 'shuffle', label: 'shuffle wires' },
+];
+
 export class Controls {
-  constructor({ settings, scenes, onStart, onMusic, onSound, onVolume, onScene, onSkip }) {
+  // birds: [{ id, label }] with 'mixed' first
+  constructor({ settings, scenes, birds, onStart, onToggle, onVolume, onScene, onBird, onSkip, onReshuffle }) {
     this.settings = settings;
     this.scenes = scenes;
-    this.handlers = { onStart, onMusic, onSound, onVolume, onScene, onSkip };
+    this.birds = birds;
+    this.handlers = { onStart, onToggle, onVolume, onScene, onBird, onSkip, onReshuffle };
     this.started = false;
 
-    // icons
     $('dock-toggle').innerHTML = ICONS.bird;
-    $('scene-prev').innerHTML = ICONS.prev;
-    $('scene-next').innerHTML = ICONS.next;
+    for (const id of ['scene-prev', 'bird-prev']) $(id).innerHTML = ICONS.prev;
+    for (const id of ['scene-next', 'bird-next']) $(id).innerHTML = ICONS.next;
     $('skip').insertAdjacentHTML('afterbegin', ICONS.skip);
-    $('fullscreen').insertAdjacentHTML('afterbegin', ICONS.full);
+    $('reshuffle').insertAdjacentHTML('afterbegin', ICONS.shuffle);
     $('hide-ui').insertAdjacentHTML('afterbegin', ICONS.close);
-    document.querySelector('#t-music .ico').innerHTML = ICONS.note;
-    document.querySelector('#t-sound .ico').innerHTML = ICONS.rain;
+    for (const t of TOGGLES) document.querySelector(`#${t.id} .ico`).innerHTML = ICONS[t.icon];
+    document.querySelector('#t-full .ico').innerHTML = ICONS.full;
     document.querySelector('#start .ico').innerHTML = ICONS.play;
 
     this.bindIntro();
@@ -65,10 +85,10 @@ export class Controls {
   // ---------------------------------------------------------------- dock
   bindDock() {
     const panel = $('panel');
-    const toggle = $('dock-toggle');
-    toggle.addEventListener('click', () => this.setPanel(panel.hidden));
-    $('t-music').addEventListener('click', () => this.toggle('music'));
-    $('t-sound').addEventListener('click', () => this.toggle('sound'));
+    $('dock-toggle').addEventListener('click', () => this.setPanel(panel.hidden));
+    for (const t of TOGGLES) $(t.id).addEventListener('click', () => this.toggle(t.key));
+    $('t-full').addEventListener('click', () => this.fullscreen());
+    document.addEventListener('fullscreenchange', () => this.render());
     $('volume').addEventListener('input', (e) => {
       this.settings.volume = parseFloat(e.target.value);
       this.handlers.onVolume(this.settings.volume);
@@ -76,8 +96,10 @@ export class Controls {
     });
     $('scene-prev').addEventListener('click', () => this.handlers.onScene(-1));
     $('scene-next').addEventListener('click', () => this.handlers.onScene(1));
+    $('bird-prev').addEventListener('click', () => this.cycleBird(-1));
+    $('bird-next').addEventListener('click', () => this.cycleBird(1));
     $('skip').addEventListener('click', () => this.handlers.onSkip());
-    $('fullscreen').addEventListener('click', () => this.fullscreen());
+    $('reshuffle').addEventListener('click', () => this.handlers.onReshuffle());
     $('hide-ui').addEventListener('click', () => this.hideAll(true));
     document.addEventListener('pointerdown', (e) => {
       if (!panel.hidden && !$('dock').contains(e.target)) this.setPanel(false);
@@ -85,19 +107,29 @@ export class Controls {
   }
 
   setPanel(open) {
-    const panel = $('panel');
-    panel.hidden = !open;
+    $('panel').hidden = !open;
     $('dock-toggle').setAttribute('aria-expanded', String(open));
     $('dock').classList.toggle('open', open);
   }
 
-  toggle(which) {
-    this.settings[which] = !this.settings[which];
-    if (which === 'music') this.handlers.onMusic(this.settings.music);
-    else this.handlers.onSound(this.settings.sound);
+  toggle(key) {
+    this.settings[key] = !this.settings[key];
+    this.handlers.onToggle(key, this.settings[key]);
     this.persist();
     this.render();
-    this.flash(`${which === 'music' ? 'music' : 'sounds'} ${this.settings[which] ? 'on' : 'off'}`);
+    const t = TOGGLES.find((x) => x.key === key);
+    this.flash(`${t.label} ${this.settings[key] ? 'on' : 'off'}`);
+  }
+
+  cycleBird(dir) {
+    const ids = this.birds.map((b) => b.id);
+    const i = Math.max(0, ids.indexOf(this.settings.bird));
+    const next = this.birds[(i + dir + ids.length) % ids.length];
+    this.settings.bird = next.id;
+    this.handlers.onBird(next.id);
+    this.persist();
+    this.render();
+    this.flash(next.label);
   }
 
   fullscreen() {
@@ -126,6 +158,21 @@ export class Controls {
           break;
         case 's':
           this.toggle('sound');
+          break;
+        case 't':
+          this.toggle('notes');
+          break;
+        case 'o':
+          this.toggle('silhouette');
+          break;
+        case 'w':
+          this.toggle('shuffle');
+          break;
+        case 'r':
+          this.handlers.onReshuffle();
+          break;
+        case 'b':
+          this.cycleBird(e.shiftKey ? -1 : 1);
           break;
         case 'arrowright':
           this.handlers.onScene(1);
@@ -175,11 +222,13 @@ export class Controls {
   // ---------------------------------------------------------------- display
   render() {
     const s = this.settings;
-    $('t-music').setAttribute('aria-pressed', String(s.music));
-    $('t-sound').setAttribute('aria-pressed', String(s.sound));
+    for (const t of TOGGLES) $(t.id).setAttribute('aria-pressed', String(!!s[t.key]));
+    $('t-full').setAttribute('aria-pressed', String(!!document.fullscreenElement));
     $('volume').value = String(s.volume);
     const sc = this.scenes[s.scene] || this.scenes[0];
     $('scene-name').textContent = sc.name;
+    $('bird-name').textContent = (this.birds.find((b) => b.id === s.bird) || this.birds[0]).label;
+    $('reshuffle').hidden = !s.shuffle;
   }
 
   persist() {

@@ -16,6 +16,14 @@ export const birdMaterial = new THREE.MeshToonMaterial({
   side: THREE.DoubleSide,
 });
 
+// silhouette mode: every bird becomes a flat dark shape against the sky
+export const SILHOUETTE = new THREE.Color('#0b0a11');
+export function setBirdSilhouette(on) {
+  birdMaterial.vertexColors = !on;
+  birdMaterial.color.set(on ? SILHOUETTE : '#ffffff');
+  birdMaterial.needsUpdate = true;
+}
+
 const col = new THREE.Color();
 
 function paint(geometry, fn) {
@@ -334,6 +342,21 @@ export class Bird {
     return !this.aborted && (this.departTime == null || this.departTime > t - 0.6);
   }
 
+  // swap plumage (and size) in place; pose and timeline carry on
+  setSpecies(id, worldScale) {
+    const old = this.rig;
+    this.speciesId = id;
+    this.sp = SPECIES[id];
+    this.rig = new BirdRig(id, worldScale);
+    this.size = this.sp.scale * worldScale;
+    this.radius = 0.34 * this.size;
+    this.rig.root.position.copy(old.root.position);
+    this.rig.root.rotation.copy(old.root.rotation);
+    this.rig.root.visible = old.root.visible;
+    old.root.parent?.add(this.rig.root);
+    old.dispose();
+  }
+
   scheduleDeparture(time, exit, exitDur) {
     this.departTime = time;
     this.exit = exit;
@@ -447,6 +470,7 @@ export class Bird {
         p.flap = -0.75 * (1 - e);
         p.sweep = -0.5 * (1 - e);
         p.pitch = THREE.MathUtils.lerp(0.95, PERCH_PITCH, e) + Math.sin(k * Math.PI * 2.5) * 0.12 * (1 - k);
+        p.crouch = Math.max(0, 1 - k * 2.2);
         p.legs = 1;
         p.tailSpread = 1 + 0.6 * (1 - e);
         p.tail = THREE.MathUtils.lerp(-0.2, 0.3, e);
@@ -536,31 +560,31 @@ export class Bird {
     if (!id.kind && now > id.next) {
       const r = Math.random();
       id.start = now;
-      if (r < 0.42) {
+      if (r < 0.46) {
         id.kind = 'look';
         id.dur = rand(0.4, 2.2);
         // birds look around in quick snaps; often toward the camera
         this.headTarget.yaw = rand(-1.3, 1.3) * (Math.random() < 0.3 ? 0.3 : 1);
         this.headTarget.pitch = rand(-0.25, 0.35);
-      } else if (r < 0.55) {
+      } else if (r < 0.6) {
         id.kind = 'tilt';
         id.dur = rand(0.5, 1.2);
         this.headTarget.roll = rand(-0.5, 0.5);
         this.headTarget.yaw = rand(-0.9, 0.9);
-      } else if (r < 0.66) {
+      } else if (r < 0.72) {
         id.kind = 'preen';
         id.dur = rand(0.9, 1.8);
         id.a = Math.random() < 0.5 ? 1 : -1;
-      } else if (r < 0.76) {
+      } else if (r < 0.82) {
         id.kind = 'flick';
         id.dur = 0.35;
-      } else if (r < 0.84) {
+      } else if (r < 0.9) {
         id.kind = 'fluff';
         id.dur = 0.8;
-      } else if (r < 0.9) {
+      } else if (r < 0.95) {
         id.kind = 'stretch';
         id.dur = 0.9;
-      } else if (r < 0.95 && world.canTurn(this, now)) {
+      } else if (r < 0.975 && world.canTurn(this, now)) {
         id.kind = 'turn';
         id.dur = 0.3;
         this.hop = { start: now, dur: 0.24, height: 0.12 * this.size };
@@ -581,7 +605,7 @@ export class Bird {
           this.headTarget.yaw = rand(-1, 1);
         }
       }
-      id.next = now + id.dur + rand(0.4, 3.2);
+      id.next = now + id.dur + rand(0.8, 4.5);
     }
 
     switch (id.kind) {
