@@ -80,7 +80,7 @@ Stick to public-domain melodies (or ones you have rights to). Most well-known fi
 
 ### Keys
 
-`M` music · `S` sounds · `T` notes · `O` silhouette · `B` / `shift+B` birds · `W` shuffle wires · `R` new wires · `←/→` scene · `N` next song · `H` hide the UI · `F` fullscreen
+`M` music · `S` sounds · `T` notes · `O` silhouette · `B` / `shift+B` birds · `W` shuffle wires · `R` new wires · `←/→` scene · `N` next song · `H` open/close the panel · `F` fullscreen. The corner button is always visible.
 
 ### Debugging
 

@@ -100,7 +100,7 @@ export class Controls {
     $('bird-next').addEventListener('click', () => this.cycleBird(1));
     $('skip').addEventListener('click', () => this.handlers.onSkip());
     $('reshuffle').addEventListener('click', () => this.handlers.onReshuffle());
-    $('hide-ui').addEventListener('click', () => this.hideAll(true));
+    $('hide-ui').addEventListener('click', () => this.setPanel(false));
     document.addEventListener('pointerdown', (e) => {
       if (!panel.hidden && !$('dock').contains(e.target)) this.setPanel(false);
     });
@@ -136,11 +136,6 @@ export class Controls {
     const el = document.documentElement;
     if (!document.fullscreenElement) el.requestFullscreen?.().catch(() => {});
     else document.exitFullscreen?.();
-  }
-
-  hideAll(hidden) {
-    document.body.classList.toggle('ui-hidden', hidden);
-    if (hidden) this.setPanel(false);
   }
 
   // ---------------------------------------------------------------- keys
@@ -184,7 +179,7 @@ export class Controls {
           this.handlers.onSkip();
           break;
         case 'h':
-          this.hideAll(!document.body.classList.contains('ui-hidden'));
+          this.setPanel($('panel').hidden);
           break;
         case 'f':
           this.fullscreen();
