@@ -342,6 +342,7 @@ export const SONGS = [
 // if the file isn't there the song is quietly skipped. See src/music/midi.js.
 //   track       which MIDI track holds the tune (default: guessed)
 //   fromAudio   the MIDI was transcribed from a recording; clean it up first
+//   mergeVel    (audio) fold a repeated note into the last if it's this much softer or less
 //   tempoScale  how much slower than the file's own tempo (0.6 = 60%)
 //   breath      extra sixteenths of silence after each phrase
 //   maxBars     how much of the file to use
@@ -352,12 +353,16 @@ export const MIDI_SONGS = [
     title: 'Worried Shoes',
     composer: 'Daniel Johnston',
     year: 1983,
+    // made with `scripts/audio-to-midi.sh --separate` from the licensed recording
+    // (Karen O and the Kids, 2009): track 0 is the sung line, track 1 the backing
     midi: '/songs/worried-shoes.mid',
-    fromAudio: true, // made with scripts/audio-to-midi.sh from a licensed recording
+    fromAudio: true,
+    track: 0,
+    mergeVel: 1.0,
     instrument: 'kalimba',
     tempoScale: 0.6,
     breath: 4,
-    maxBars: 48,
+    maxBars: 44,
     center: 72,
     repeat: 1,
   },

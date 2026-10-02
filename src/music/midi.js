@@ -107,7 +107,7 @@ function skyline(notes) {
 // re-triggered, overtones show up an octave or a twelfth above, and the
 // previous note's ringing tail is picked up again at every new onset.
 // Clean it up and pull out the lead line by loudness rather than height.
-function audioMelody(all, beatSec) {
+function audioMelody(all, beatSec, mergeGap = 0.06, mergeVel = 0.9) {
   const s = (sec) => sec / beatSec; // seconds → beats
   let ns = all.filter((n) => n.end - n.start >= s(0.07));
   // overtone ghosts: a quieter note an octave/twelfth/two octaves above one starting with it
@@ -121,16 +121,35 @@ function audioMelody(all, beatSec) {
           m.vel >= n.vel * 0.6,
       ),
   );
-  // re-triggers: the same pitch picking up again, overlapping or much quieter
+  // stray detections far from where the voice actually sits (breaths, bleed)
+  if (ns.length > 20) {
+    // weight by duration so short blips don't drag the centre around
+    const byLen = [...ns].sort((a, b) => a.midi - b.midi);
+    const total = byLen.reduce((t, n) => t + (n.end - n.start), 0);
+    let acc = 0;
+    let centre = byLen[0].midi;
+    for (const n of byLen) {
+      acc += n.end - n.start;
+      if (acc >= total / 2) {
+        centre = n.midi;
+        break;
+      }
+    }
+    ns = ns.filter((n) => Math.abs(n.midi - centre) <= 12);
+  }
+  // re-triggers: the same pitch picking up again right away (held, sung notes
+  // get split at vibrato and syllables); a real repeat leaves a gap
   ns.sort((a, b) => a.midi - b.midi || a.start - b.start);
   const merged = [];
   for (const n of ns) {
     const prev = merged[merged.length - 1];
-    if (prev && prev.midi === n.midi && n.start < prev.end + s(0.03) && (n.start < prev.end - s(0.02) || n.vel < prev.vel * 0.75)) {
+    // ...and a fresh syllable hits about as hard as the last, a re-trigger is softer
+    if (prev && prev.midi === n.midi && n.start < prev.end + s(mergeGap) && n.vel <= prev.lastVel * mergeVel) {
       prev.end = Math.max(prev.end, n.end);
+      prev.lastVel = n.vel;
       continue;
     }
-    merged.push({ ...n });
+    merged.push({ ...n, lastVel: n.vel });
   }
   merged.sort((a, b) => a.start - b.start);
   // one note per onset cluster: the loudest (ties go to the higher one)
@@ -152,7 +171,22 @@ function audioMelody(all, beatSec) {
     }
     i = j;
   }
-  return melody.filter((n) => n.end - n.start >= s(0.06));
+  const line = melody.filter((n) => n.end - n.start >= s(0.06));
+  // octave slips: a lone note far from both neighbours that fits an octave away
+  for (let i = 1; i < line.length - 1; i++) {
+    const a = line[i - 1].midi;
+    const b = line[i + 1].midi;
+    const m = line[i].midi;
+    if (Math.abs(m - a) > 7 && Math.abs(m - b) > 7) {
+      for (const k of [12, -12]) {
+        if (Math.abs(m - k - a) <= 5 || Math.abs(m - k - b) <= 5) {
+          line[i].midi = m - k;
+          break;
+        }
+      }
+    }
+  }
+  return line;
 }
 
 function pickMelodyTrack(tracks) {
@@ -228,12 +262,13 @@ function guessChord(weights, bassPc, minScore = 0.35) {
 const fmt = (u) => String(Math.max(0.25, Math.round(u * 4) / 4));
 const noteName = (m) => `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`;
 
-// opts: { track, fromAudio, tempoScale, bpm, breath, maxBars, center }
+// opts: { track, fromAudio, mergeGap, mergeVel, tempoScale, bpm, breath, maxBars, center }
 export function arrangeMidi(midi, opts = {}) {
   const tracks = midi.tracks.map((t) => ({ ...t, notes: t.notes.filter((n) => n.ch !== 9 && n.end > n.start) }));
   let melody;
   if (opts.fromAudio) {
-    melody = audioMelody(tracks.flatMap((t) => t.notes), 60 / midi.bpm);
+    const src = opts.track != null ? tracks[opts.track].notes : tracks.flatMap((t) => t.notes);
+    melody = audioMelody(src, 60 / midi.bpm, opts.mergeGap ?? 0.06, opts.mergeVel ?? 0.9);
   } else {
     const melTrack = opts.track != null ? tracks[opts.track] : pickMelodyTrack(tracks);
     if (!melTrack || !melTrack.notes.length) throw new Error('No melody found in MIDI');
@@ -241,7 +276,9 @@ export function arrangeMidi(midi, opts = {}) {
   }
   if (!melody.length) throw new Error('No melody found in MIDI');
   const melSet = new Set(melody.map((n) => `${n.start.toFixed(3)}:${n.midi}`));
-  const accomp = tracks.flatMap((t) => t.notes).filter((n) => !melSet.has(`${n.start.toFixed(3)}:${n.midi}`));
+  // separated stems: harmony comes only from the other tracks (not vocal ghosts)
+  const accompSrc = opts.fromAudio && opts.track != null ? tracks.filter((_, i) => i !== opts.track) : tracks;
+  const accomp = accompSrc.flatMap((t) => t.notes).filter((n) => !melSet.has(`${n.start.toFixed(3)}:${n.midi}`));
 
   const [num, den] = midi.timeSig;
   const bar = num * (4 / den); // in quarter-note beats

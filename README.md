@@ -34,11 +34,11 @@ netlify dev
 
 ### Songs
 
-Five public-domain pieces: Für Elise (arranged very slow, with breaths at phrase ends, on a felt-piano "plunk"), Gymnopédie No. 1, Canon in D, Brahms' Lullaby and Clair de lune. Plus two originals written by Claude for this project: **Little Wire Waltz** (music box) and **Pocket Full of Rain** (kalimba).
+Five public-domain pieces: Für Elise (arranged very slow, with breaths at phrase ends, on a felt-piano "plunk"), Gymnopédie No. 1, Canon in D, Brahms' Lullaby and Clair de lune. Plus two originals written by Claude for this project: **Little Wire Waltz** (music box) and **Pocket Full of Rain** (kalimba). And **Worried Shoes** (Daniel Johnston, used with permission), arranged from MIDI on kalimba.
 
 ### Songs from MIDI (licensed songs)
 
-Songs you have the rights to can be added as MIDI files, so nobody has to retype a score. List the song in `MIDI_SONGS` in `src/music/songs.js`, then drop the file at its path under `public/`. "Worried Shoes" (Daniel Johnston) is already listed, waiting for `public/songs/worried-shoes.mid`.
+Songs you have the rights to can be added as MIDI files, so nobody has to retype a score. List the song in `MIDI_SONGS` in `src/music/songs.js`, then drop the file at its path under `public/`. "Worried Shoes" (Daniel Johnston, in the Karen O and the Kids version) is in, as a MIDI rendition.
 
 At load time `src/music/midi.js` arranges the file into a Birdsongs rendition:
 
@@ -48,7 +48,20 @@ At load time `src/music/midi.js` arranges the file into a Birdsongs rendition:
 
 A file that's missing is skipped quietly.
 
-Only have a recording? Run `scripts/audio-to-midi.sh song.mp3 public/songs/song-name.mid`. It uses Spotify's Basic Pitch and installs it on first use. Then set `fromAudio: true` on the song's entry, which tells the arranger to clean up the transcription: overtone ghosts, re-triggered held notes, and picking the lead line by loudness.
+Only have a recording? Run `scripts/audio-to-midi.sh --separate song.mp3 public/songs/song-name.mid`. It installs its tools on first use:
+
+- Meta's Demucs splits the vocals from the backing.
+- Spotify's Basic Pitch transcribes each part.
+- The output is a 2-track MIDI: track 0 is the sung melody, track 1 the backing.
+
+Mark the song's entry `fromAudio: true, track: 0`. The arranger then cleans up the transcription before arranging it:
+
+- drops stray detections outside the vocal range and overtone ghosts
+- fixes octave slips
+- folds re-triggered held notes back together
+- takes the chords from the backing only
+
+"Worried Shoes" was made this way. Keep source recordings in `songs/` at the project root: that folder is gitignored, so they never get published.
 
 To try a MIDI without deploying it, run this in the console: `birdsongs.addMidi(await (await fetch(url)).arrayBuffer(), { title: '…' })`.
 

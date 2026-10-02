@@ -3,3 +3,6 @@ dist
 .netlify
 .DS_Store
 .claude
+
+# source recordings used to make MIDI renditions: keep them local, never publish
+/songs/
