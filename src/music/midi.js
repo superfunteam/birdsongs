@@ -103,6 +103,58 @@ function skyline(notes) {
   return out;
 }
 
+// MIDI transcribed from audio (e.g. Basic Pitch) is noisy: held notes are
+// re-triggered, overtones show up an octave or a twelfth above, and the
+// previous note's ringing tail is picked up again at every new onset.
+// Clean it up and pull out the lead line by loudness rather than height.
+function audioMelody(all, beatSec) {
+  const s = (sec) => sec / beatSec; // seconds → beats
+  let ns = all.filter((n) => n.end - n.start >= s(0.07));
+  // overtone ghosts: a quieter note an octave/twelfth/two octaves above one starting with it
+  ns = ns.filter(
+    (n) =>
+      !ns.some(
+        (m) =>
+          [12, 19, 24].includes(n.midi - m.midi) &&
+          Math.abs(m.start - n.start) < s(0.08) &&
+          m.end > n.start &&
+          m.vel >= n.vel * 0.6,
+      ),
+  );
+  // re-triggers: the same pitch picking up again, overlapping or much quieter
+  ns.sort((a, b) => a.midi - b.midi || a.start - b.start);
+  const merged = [];
+  for (const n of ns) {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.midi === n.midi && n.start < prev.end + s(0.03) && (n.start < prev.end - s(0.02) || n.vel < prev.vel * 0.75)) {
+      prev.end = Math.max(prev.end, n.end);
+      continue;
+    }
+    merged.push({ ...n });
+  }
+  merged.sort((a, b) => a.start - b.start);
+  // one note per onset cluster: the loudest (ties go to the higher one)
+  const melody = [];
+  for (let i = 0; i < merged.length; ) {
+    const t0 = merged[i].start;
+    let best = merged[i];
+    let j = i;
+    while (j < merged.length && merged[j].start - t0 < s(0.07)) {
+      const n = merged[j];
+      if (n.vel > best.vel + 4 || (Math.abs(n.vel - best.vel) <= 4 && n.midi > best.midi)) best = n;
+      j++;
+    }
+    const last = melody[melody.length - 1];
+    // a quiet note under a still-sounding louder one is a tail or accompaniment
+    if (!(last && best.start < last.end - s(0.05) && best.vel < last.vel * 0.8)) {
+      if (last && last.end > best.start) last.end = best.start;
+      melody.push({ ...best });
+    }
+    i = j;
+  }
+  return melody.filter((n) => n.end - n.start >= s(0.06));
+}
+
 function pickMelodyTrack(tracks) {
   const usable = tracks.filter((t) => t.notes.filter((n) => n.ch !== 9).length >= 8);
   if (!usable.length) return null;
@@ -152,9 +204,9 @@ const TEMPLATES = [
   ['sus4', [0, 5, 7]],
 ];
 
-function guessChord(weights, bassPc) {
+function guessChord(weights, bassPc, minScore = 0.35) {
   let best = null;
-  let bestScore = 0.35;
+  let bestScore = minScore;
   const total = weights.reduce((a, b) => a + b, 0) || 1;
   for (let root = 0; root < 12; root++) {
     for (const [q, ivs] of TEMPLATES) {
@@ -176,12 +228,18 @@ function guessChord(weights, bassPc) {
 const fmt = (u) => String(Math.max(0.25, Math.round(u * 4) / 4));
 const noteName = (m) => `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`;
 
-// opts: { track, tempoScale, bpm, breath, maxBars, center }
+// opts: { track, fromAudio, tempoScale, bpm, breath, maxBars, center }
 export function arrangeMidi(midi, opts = {}) {
   const tracks = midi.tracks.map((t) => ({ ...t, notes: t.notes.filter((n) => n.ch !== 9 && n.end > n.start) }));
-  const melTrack = opts.track != null ? tracks[opts.track] : pickMelodyTrack(tracks);
-  if (!melTrack || !melTrack.notes.length) throw new Error('No melody found in MIDI');
-  let melody = skyline(melTrack.notes);
+  let melody;
+  if (opts.fromAudio) {
+    melody = audioMelody(tracks.flatMap((t) => t.notes), 60 / midi.bpm);
+  } else {
+    const melTrack = opts.track != null ? tracks[opts.track] : pickMelodyTrack(tracks);
+    if (!melTrack || !melTrack.notes.length) throw new Error('No melody found in MIDI');
+    melody = skyline(melTrack.notes);
+  }
+  if (!melody.length) throw new Error('No melody found in MIDI');
   const melSet = new Set(melody.map((n) => `${n.start.toFixed(3)}:${n.midi}`));
   const accomp = tracks.flatMap((t) => t.notes).filter((n) => !melSet.has(`${n.start.toFixed(3)}:${n.midi}`));
 
@@ -211,7 +269,7 @@ export function arrangeMidi(midi, opts = {}) {
       w[n.midi % 12] += ov;
       if (n.midi < low) low = n.midi;
     }
-    chords.push(guessChord(w, Number.isFinite(low) ? low % 12 : null));
+    chords.push(guessChord(w, Number.isFinite(low) ? low % 12 : null, opts.fromAudio ? 0.5 : 0.35));
   }
 
   // walk the tune and write tokens (durations in sixteenths)

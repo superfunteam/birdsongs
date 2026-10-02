@@ -48,6 +48,8 @@ At load time `src/music/midi.js` arranges the file into a Birdsongs rendition:
 
 A file that's missing is skipped quietly.
 
+Only have a recording? Run `scripts/audio-to-midi.sh song.mp3 public/songs/song-name.mid`. It uses Spotify's Basic Pitch and installs it on first use. Then set `fromAudio: true` on the song's entry, which tells the arranger to clean up the transcription: overtone ghosts, re-triggered held notes, and picking the lead line by loudness.
+
 To try a MIDI without deploying it, run this in the console: `birdsongs.addMidi(await (await fetch(url)).arrayBuffer(), { title: '…' })`.
 
 ### Settings

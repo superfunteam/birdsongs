@@ -341,6 +341,7 @@ export const SONGS = [
 // Drop the file at the given path (under public/) and it joins the rotation;
 // if the file isn't there the song is quietly skipped. See src/music/midi.js.
 //   track       which MIDI track holds the tune (default: guessed)
+//   fromAudio   the MIDI was transcribed from a recording; clean it up first
 //   tempoScale  how much slower than the file's own tempo (0.6 = 60%)
 //   breath      extra sixteenths of silence after each phrase
 //   maxBars     how much of the file to use
@@ -352,10 +353,11 @@ export const MIDI_SONGS = [
     composer: 'Daniel Johnston',
     year: 1983,
     midi: '/songs/worried-shoes.mid',
+    fromAudio: true, // made with scripts/audio-to-midi.sh from a licensed recording
     instrument: 'kalimba',
     tempoScale: 0.6,
     breath: 4,
-    maxBars: 64,
+    maxBars: 48,
     center: 72,
     repeat: 1,
   },
