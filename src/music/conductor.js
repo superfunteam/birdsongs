@@ -1,5 +1,6 @@
 import { parseSong } from './parse.js';
 import { SPECIES } from '../world/species.js';
+import { BIRD_RADIUS } from '../world/bird.js';
 
 // The conductor reads the score a few seconds ahead and turns every note into
 // a bird event: either a landing (bird must touch the wire exactly on the
@@ -84,7 +85,7 @@ export class Conductor {
     const v = this.flock.view;
     const usable = Math.max(6, v.xMax - v.xMin - 1.2);
     const notesPerUnit = song.events.length / song.lengthUnits;
-    const want = usable / (v.birdScale * 1.25);
+    const want = usable / (v.birdScale * this.flock.meanSpeciesScale() * 1.25);
     const bars = Math.max(1, Math.round(want / notesPerUnit / song.barUnits));
     return bars * song.barUnits;
   }
@@ -248,7 +249,7 @@ export class Conductor {
     }
     if (!kind) {
       const speciesId = flock.pickSpecies(scene.species, pitchNorm);
-      const r = 0.34 * SPECIES[speciesId].scale * v.birdScale;
+      const r = BIRD_RADIUS * SPECIES[speciesId].scale * v.birdScale;
       const x = flock.landingX(wire, px, time, r);
       if (x != null) {
         bird = flock.land({ wire, x, time, now, speciesId });

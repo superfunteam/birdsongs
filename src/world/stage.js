@@ -6,6 +6,8 @@ import { WeatherFX } from './weatherfx.js';
 import { Flock } from './flock.js';
 import { NotePips } from './pips.js';
 import { setBirdSilhouette, SILHOUETTE } from './bird.js';
+import { ANATOMY } from './bird-anatomy.js';
+import { SPECIES } from './species.js';
 import { SCENES } from './scenes.js';
 
 const CAM_Y = 1.7;
@@ -15,6 +17,12 @@ const WIRE_BAND = [0.49, 0.8]; // screen fractions for the lowest / highest wire
 const WIRE_BAND_PORTRAIT = [0.5, 0.71];
 const MIN_WIDTH = 12.5; // world units of wire that must always be visible
 export const DAY_LENGTH = 40 * 60; // seconds for a full day/night cycle
+// The lofts are authored in their resting pose, measured up from the ankle.
+// Crest tips extend .103 beyond the crown. Use the tallest actual species to
+// frame the entire flock with one scale, preserving every length ratio.
+export const MAX_PERCHED_HEIGHT = Math.max(...Object.entries(ANATOMY).map(([id, a]) =>
+  (a.rows.at(-1)[0] + a.leg + (a.crest ? 0.103 : 0)) * a.k * SPECIES[id].scale,
+));
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -149,6 +157,7 @@ export class Stage {
       heights.push(this.ndcToPlane(0, f * 2 - 1).y);
     }
     const spacing = (heights[n - 1] - heights[0]) / Math.max(1, n - 1);
+    const closestSpacing = Math.min(...heights.slice(1).map((height, i) => height - heights[i]));
     const sag = spacing * (W ? W.sagK : 0.5);
     heights.forEach((h, i) => (heights[i] = h + sag * 0.55));
 
@@ -198,7 +207,9 @@ export class Stage {
       spacing,
       camZ,
       topAt,
-      birdScale: Math.min(spacing * 0.95, (right.x - left.x) * 0.068),
+      // Reserve headroom above the tallest standing bird for normal looking
+      // and breathing motion, without shrinking large species independently.
+      birdScale: Math.min(closestSpacing * 0.88 / MAX_PERCHED_HEIGHT, (right.x - left.x) * 0.05),
       wires: n,
     };
     this.fx.setBounds({ spanX: halfW * 1.7 + 6, top: topAt(0) + 4 });

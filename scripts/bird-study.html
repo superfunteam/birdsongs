@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Bird anatomy · photographic references</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #deded6; color: #343a37; font: 13px system-ui; }
+  header { height: 72px; display: flex; gap: 8px; align-items: center; padding: 0 18px; }
+  header b { margin-right: auto; }
+  button, select { font: inherit; padding: 7px 9px; }
+  #labels { position: absolute; inset: 72px 0 0; display: grid; grid-template-columns: repeat(4,1fr); grid-template-rows: repeat(3,1fr); pointer-events: none; }
+  .label { align-self: end; text-align: center; padding-bottom: 18px; }
+  .label small { display: block; color: #626a62; font-size: 11px; }
+  #reference { display: none; position: absolute; left: 16px; top: 105px; bottom: 38px; width: calc(48% - 24px); margin: 0; }
+  #reference img { width: 100%; height: calc(100% - 42px); object-fit: contain; }
+  figcaption { color: #536053; text-align: center; font-size: 12px; }
+  figcaption a { color: inherit; }
+  #model-label { display: none; position: absolute; left: 50%; right: 0; bottom: 24px; text-align: center; color: #536053; }
+  canvas { display: block; }
+</style>
+<header>
+  <b>Bird anatomy</b>
+  <button id="rest">Perched</button><button id="fly">Flight</button><button id="cycle">Landing</button>
+  <button id="angle">¾ view</button><button id="silhouette">Silhouette</button>
+  <select id="species" aria-label="Species"><option value="all">All species</option></select>
+</header>
+<figure id="reference"><img alt="Photographic reference of the selected bird"><figcaption></figcaption></figure>
+<div id="model-label">Anatomical model · before the pixel pass</div><div id="labels"></div>
+<script type="module">
+import * as THREE from 'three';
+import { Bird, Bezier } from '/src/world/bird.js';
+import { SPECIES } from '/src/world/species.js';
+import { setBirdSilhouette } from '/src/world/bird-rig.js';
+
+// Real photographs, displayed only in this development tool, never bundled
+// with the radio. Source/photographer rights remain with the linked library.
+const references = {
+  sparrow: [51357991, false], swallow: [227073431, false], robin: [222821411, false],
+  bluebird: [213783891, true], goldfinch: [172924761, false], crow: [51777001, false],
+  pigeon: [61674401, true], starling: [205138871, true], cardinal: [257386271, true],
+  chickadee: [47337851, false], gull: [56460521, false],
+};
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+document.body.append(renderer.domElement);
+renderer.setClearColor('#deded6');
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight('#ffffff', '#929589', 2.2));
+const sun = new THREE.DirectionalLight('#ffffff', 1.5);
+sun.position.set(2, 4, 5); scene.add(sun);
+const camera = new THREE.OrthographicCamera(-9, 9, 4.5, -4.5, .1, 100);
+camera.position.set(0, 0, 20);
+let mode = 'rest', solo = 'all', silhouette = false, yaw = 0;
+const birds = [], labels = document.getElementById('labels');
+const reference = document.getElementById('reference');
+const world = { rain: 0, wireY: () => 0, canTurn: () => false, canShuffle: () => false, moveLoad: () => {} };
+for (const [i, [id, sp]] of Object.entries(SPECIES).entries()) {
+  const group = new THREE.Group(); scene.add(group);
+  const wire = new THREE.Mesh(new THREE.CylinderGeometry(.004, .004, 3.8, 4), new THREE.MeshBasicMaterial({ color: '#9ba198' }));
+  wire.rotation.z = Math.PI / 2; group.add(wire);
+  const approach = new Bezier(new THREE.Vector3(-2,1,0), new THREE.Vector3(-1,.7,0), new THREE.Vector3(-.2,.3,0), new THREE.Vector3());
+  const b = new Bird({ id: i, speciesId: id, worldScale: 1, wire: 0, x: 0, facing: 1, yaw: 0, landTime: 0, spawnTime: -3, approach });
+  group.add(b.rig.root); birds.push({ b, group, wire, x: (i%4-1.5)*4.5, y: 0 });
+  const label = document.createElement('div'); label.className = 'label';
+  label.innerHTML = `${sp.fullName}<small>${sp.lengthCm} cm · ${sp.wingspanCm} cm wingspan</small>`; labels.append(label);
+  const option = document.createElement('option'); option.value = id; option.textContent = sp.name; document.getElementById('species').append(option);
+}
+function layout() {
+  const height = innerHeight - 72;
+  renderer.setSize(innerWidth, height);
+  camera.top = 9 * height / innerWidth; camera.bottom = -camera.top; camera.updateProjectionMatrix();
+  birds.forEach((item, i) => {
+    item.y = camera.top-(Math.floor(i/4)+.70)*(camera.top*2/3);
+    item.group.visible = solo==='all' || item.b.speciesId===solo;
+    item.group.position.set(solo==='all' ? item.x : 4.2, solo==='all' ? item.y : -1.9, 0);
+    item.group.scale.setScalar(solo==='all' ? 1 : 7.2/item.b.sp.scale);
+  });
+}
+const setMode = value => { mode = value; frame(false); };
+document.getElementById('rest').onclick = () => setMode('rest');
+document.getElementById('fly').onclick = () => setMode('fly');
+document.getElementById('cycle').onclick = () => setMode('cycle');
+document.getElementById('angle').onclick = e => { yaw = yaw===0 ? -.65 : 0; e.target.textContent = yaw===0 ? '¾ view' : 'Side view'; frame(false); };
+document.getElementById('silhouette').onclick = () => { silhouette = !silhouette; setBirdSilhouette(silhouette); frame(false); };
+document.getElementById('species').onchange = e => {
+  solo = e.target.value;
+  labels.style.visibility = solo==='all' ? 'visible' : 'hidden';
+  reference.style.display = solo==='all' ? 'none' : 'block';
+  document.getElementById('model-label').style.display = solo==='all' ? 'none' : 'block';
+  if (solo!=='all') {
+    const [asset,flip] = references[solo];
+    reference.querySelector('img').style.visibility = 'hidden';
+    reference.querySelector('img').onload = () => reference.querySelector('img').style.visibility = 'visible';
+    reference.querySelector('img').src = `https://cdn.download.ams.birds.cornell.edu/api/v2/asset/${asset}/1200`;
+    reference.querySelector('img').style.transform = flip ? 'scaleX(-1)' : '';
+    reference.querySelector('figcaption').innerHTML = `${SPECIES[solo].fullName} · <a href="https://macaulaylibrary.org/asset/${asset}" target="_blank">Cornell / Macaulay Library photograph</a>`;
+  }
+  layout(); frame(false);
+};
+window.onresize = layout; layout();
+let last = performance.now()/1000;
+function frame(repeat=true) {
+  const now = performance.now()/1000, dt = Math.min(.1,now-last); last=now;
+  for (const { b, wire } of birds) {
+    const p = { pitch:b.sp.motion.perchPitch, flap:0, flapOuter:0, fold:1, sweep:0, headYaw:0, headPitch:0, tail:b.sp.motion.tailAngle, tailSpread:1, legs:1, crouch:0, fluff:1 };
+    b.rig.root.rotation.set(0,yaw,0); b.rig.root.position.set(0,0,0); wire.visible = mode!=='fly';
+    if (mode==='fly') {
+      b.flapPose(p,now,'cruise',1); p.pitch=0; p.legs=0; p.tail=0;
+      b.rig.root.position.y=.35; b.rig.pose(p);
+    } else if (mode==='cycle') {
+      const t=now%8; b.landTime=2; b.spawnTime=0; b.departTime=5; b.exitDur=3;
+      b.exit=new Bezier(new THREE.Vector3(),new THREE.Vector3(.7,.5,0),new THREE.Vector3(1,1,0),new THREE.Vector3(3,2,0));
+      b.gone=false; b.update(t,dt,world);
+    } else b.rig.pose(p);
+  }
+  renderer.render(scene,camera);
+  if (repeat) requestAnimationFrame(() => frame());
+}
+frame();
+</script></html>

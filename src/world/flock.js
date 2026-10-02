@@ -1,10 +1,13 @@
 import * as THREE from 'three';
-import { Bird, Bezier, rand } from './bird.js';
+import { Bird, Bezier, BIRD_RADIUS, rand } from './bird.js';
 import { SPECIES } from './species.js';
 
 const tmpA = new THREE.Vector3();
 const tmpB = new THREE.Vector3();
 const tmpC = new THREE.Vector3();
+const speciesScales = Object.values(SPECIES).map((sp) => sp.scale);
+const smallestSpecies = Math.min(...speciesScales);
+const largestSpecies = Math.max(...speciesScales);
 
 export class Flock {
   constructor(parent, stage) {
@@ -14,6 +17,7 @@ export class Flock {
     this.birds = [];
     this.nextId = 1;
     this.rain = 0;
+    this.now = 0;
     this.onNote = null;
   }
 
@@ -38,18 +42,32 @@ export class Flock {
   // how many birds the wires should hold on average
   targetPopulation() {
     const v = this.view;
-    return Math.max(6, Math.min(26, Math.round((v.xMax - v.xMin) * v.wires * 0.13)));
+    const mean = this.meanSpeciesScale();
+    const diameter = 2 * BIRD_RADIUS * mean * v.birdScale + 0.06;
+    const poles = this.lines.poleXs.filter((x) => x > v.xMin && x < v.xMax).length;
+    const usable = Math.max(diameter, v.xMax - v.xMin - 0.4 - poles * (0.84 + diameter));
+    const capacity = Math.floor(usable / diameter) * v.wires;
+    const desired = (v.xMax - v.xMin) * v.wires * 0.13 / Math.sqrt(mean);
+    return Math.max(3, Math.min(26, Math.round(desired), Math.floor(capacity * 0.75)));
+  }
+
+  meanSpeciesScale() {
+    if (SPECIES[this.stage.birdKind]) return SPECIES[this.stage.birdKind].scale;
+    const weights = Object.entries(this.stage.current.species);
+    const total = weights.reduce((sum, [, weight]) => sum + weight, 0);
+    return weights.reduce((sum, [id, weight]) => sum + SPECIES[id].scale * weight, 0) / total;
   }
 
   // a scene shouldn't open on empty wires: seat some birds already settled
   populate(count, now, weights) {
+    this.now = now;
     const v = this.view;
     let placed = 0;
     for (let i = 0; i < count * 6 && placed < count; i++) {
       const wire = Math.floor(Math.random() * v.wires);
       const x = rand(v.xMin + 0.8, v.xMax - 0.8);
       const speciesId = this.pickSpecies(weights, wire / Math.max(1, v.wires - 1));
-      const r = 0.34 * SPECIES[speciesId].scale * v.birdScale;
+      const r = BIRD_RADIUS * SPECIES[speciesId].scale * v.birdScale;
       if (!this.isFree(wire, x, r, now)) continue;
       const bird = this.land({ wire, x, time: now - rand(3, 25), now: now - 40, speciesId });
       bird.loadOn = true;
@@ -88,11 +106,11 @@ export class Flock {
     return true;
   }
 
-  isFree(wire, x, r, t, ignore = null) {
+  isFree(wire, x, r, t, ignore = null, birds = this.birds) {
     const v = this.view;
-    if (x < v.xMin + 0.5 || x > v.xMax - 0.5) return false;
+    if (x < v.xMin + r + 0.2 || x > v.xMax - r - 0.2) return false;
     if (!this.clearOfPoles(x, r)) return false;
-    for (const b of this.birds) {
+    for (const b of birds) {
       if (b === ignore || b.wire !== wire || !b.occupies(t)) continue;
       if (Math.abs(b.x - x) < b.radius + r + 0.06) return false;
     }
@@ -100,13 +118,25 @@ export class Flock {
   }
 
   landingX(wire, px, t, r) {
-    const steps = [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.4, -1.4];
-    const jitter = rand(-0.12, 0.12);
-    for (const s of steps) {
-      const x = px + s + jitter;
-      if (this.isFree(wire, x, r, t)) return x;
+    return this.nearestFreeX(wire, px + rand(-0.12, 0.12), t, r);
+  }
+
+  // Test the edges of occupied intervals so a large bird can find a full
+  // body-length of room, even when the playhead passes a crowded pole.
+  nearestFreeX(wire, preferred, t, r, birds = this.birds) {
+    const lo = this.view.xMin + r + 0.2;
+    const hi = this.view.xMax - r - 0.2;
+    const candidates = [THREE.MathUtils.clamp(preferred, lo, hi), lo, hi];
+    for (const pole of this.lines.poleXs) {
+      candidates.push(pole - r - 0.421, pole + r + 0.421);
     }
-    return null;
+    for (const b of birds) {
+      if (b.wire !== wire || !b.occupies(t)) continue;
+      const gap = r + b.radius + 0.061;
+      candidates.push(b.x - gap, b.x + gap);
+    }
+    candidates.sort((a, b) => Math.abs(a - preferred) - Math.abs(b - preferred));
+    return candidates.find((x) => this.isFree(wire, x, r, t, null, birds)) ?? null;
   }
 
   canTurn(bird, now) {
@@ -125,19 +155,72 @@ export class Flock {
       const id = this.pickSpecies(weights, b.wire / Math.max(1, v.wires - 1));
       if (id === b.speciesId && this.stage.birdKind !== 'mixed') continue;
       b.setSpecies(id, v.birdScale);
-      if (b.loadOn) this.lines.setLoad(b.id, b.wire, b.x, b.size);
     }
+    this.reflow(this.now);
   }
 
   // the wires moved (resize): keep each bird at the same place relative to the poles
   rescale(ratio, birdScale) {
-    const v = this.view;
     for (const b of this.birds) {
       b.x *= ratio;
-      if (b.departTime == null) b.x = Math.max(v.xMin + 0.5, Math.min(v.xMax - 0.5, b.x));
       b.size = b.sp.scale * birdScale;
-      b.radius = 0.34 * b.size;
+      b.radius = BIRD_RADIUS * b.size;
       b.rig.root.scale.setScalar(b.size);
+      for (const curve of [b.approach, b.exit]) {
+        if (!curve) continue;
+        for (const point of curve.p) point.x *= ratio;
+      }
+    }
+    this.reflow(this.now);
+  }
+
+  reflow(now) {
+    const placed = [];
+    // Preserve visitors with a musical event planned; move quiet residents
+    // into the remaining gaps after them.
+    const birds = this.birds.filter((b) => !b.gone && b.occupies(now));
+    birds.sort((a, b) => {
+      const aPlanned = a.landTime > now || a.departTime != null;
+      const bPlanned = b.landTime > now || b.departTime != null;
+      return Number(bPlanned) - Number(aPlanned) || a.x - b.x;
+    });
+    for (const b of birds) {
+      const x = this.nearestFreeX(b.wire, b.x, Math.max(now, b.landTime), b.radius, placed);
+      if (x == null) {
+        // A small-to-large species switch can fill a wire. Let overflow
+        // leave silently rather than intersect another bird or change pitch.
+        const from = b.pos.clone();
+        if (now >= b.landTime) from.set(b.x, this.wireY(b.wire, b.x), 0);
+        const { curve, dur } = this.exitPath(from, b.facing);
+        b.abort(now, now >= b.spawnTime ? curve : null, dur);
+        if (now < b.spawnTime) b.gone = true;
+        if (b.loadOn) {
+          this.lines.removeLoad(b.id, b.wire);
+          b.loadOn = false;
+        }
+        continue;
+      }
+      const dx = x - b.x;
+      b.x = x;
+      b.hop = null;
+      if (b.idle.kind === 'shuffle') b.idle.kind = null;
+      // Keep the approach and departure tangents attached to the new perch.
+      if (b.approach) {
+        const dy = this.wireY(b.wire, x) - b.approach.p[3].y;
+        for (const i of [2, 3]) {
+          b.approach.p[i].x += dx;
+          b.approach.p[i].y += dy;
+        }
+      }
+      if (b.exit && (b.departTime == null || b.departTime > now)) {
+        const dy = this.wireY(b.wire, x) - b.exit.p[0].y;
+        for (const i of [0, 1]) {
+          b.exit.p[i].x += dx;
+          b.exit.p[i].y += dy;
+        }
+      }
+      if (b.loadOn) this.lines.setLoad(b.id, b.wire, x, b.size);
+      placed.push(b);
     }
   }
 
@@ -151,7 +234,7 @@ export class Flock {
     const entries = Object.entries(weights);
     let total = 0;
     const ws = entries.map(([id, w]) => {
-      const size = (SPECIES[id].scale - 0.8) / 0.8; // 0 small → 1 big
+      const size = (SPECIES[id].scale - smallestSpecies) / (largestSpecies - smallestSpecies);
       const want = 1 - pitchNorm;
       const bias = Math.exp(-((size - want) ** 2) / 0.35);
       const v = w * (0.35 + bias);
@@ -294,6 +377,7 @@ export class Flock {
 
   // ---------------------------------------------------------------- frame
   update(now, dt, rain) {
+    this.now = now;
     this.rain = rain;
     const lines = this.lines;
     for (const b of this.birds) {

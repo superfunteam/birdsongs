@@ -25,12 +25,22 @@ netlify dev
 | --- | --- | --- |
 | Pixel pipeline | `src/render/pixel.js` | Renders at a low resolution: about 96k art pixels, with an integer device-pixel scale. A post pass adds a lofi grade, a gentle Bayer dither, colour quantisation and the dissolve used for scene changes. |
 | Sky + landscape | `src/render/sky.js` | One full-screen shader evaluated per art pixel. It draws banded dithered skies, sun, moon and stars, two cloud decks, and up to five silhouette layers (hills, mountains, city with lit windows, pines, trees, sea with glitter, a headland with a lighthouse). |
-| Birds | `src/world/bird.js`, `species.js` | Procedural low-poly 3D rigs: body, head, beak, crest, two-segment wings, forked or fan tail, legs. Plumage comes from per-face vertex colours with toon shading. Every pose is computed from time: approach, landing flare, settle, idle (look, preen, flick, fluff, stretch, hop-turn, shuffle), crouch, take-off. |
+| Birds | `src/world/bird-rig.js`, `bird-anatomy.js`, `bird-wings.js`, `bird.js`, `species.js` | Species-specific 3D anatomy, field marks, feathered wings and tails, and gripping feet. Adult length sets the shared size scale; representative wingspan sets each open wing. Time-based flight, landing, perching and take-off remain synchronized with the score. |
 | Wires | `src/world/powerlines.js` | Catenary spans between detailed poles. Perched birds weigh their span down, and every landing or take-off plucks the wire so it visibly rings. |
 | Music → birds | `src/music/conductor.js` | Plans the score 3.8 s ahead so a landing bird can start its flight early and touch down exactly on the beat. It also keeps the bird population near a target. |
 | Songs | `src/music/songs.js` | Public-domain melodies and two originals (see below). |
 | Sound | `src/audio/engine.js` | All synthesised: music box, celesta, kalimba, felt-piano plunk and Rhodes voices, a tape wow/flutter, saturation and reverb chain, vinyl crackle, rain layers, gusting wind, waves, thunder, and the occasional soft wing flap. |
 | Viewer count | `netlify/functions/presence.mjs` | Each tab sends a heartbeat every 25 s. Heartbeats go into 30-second buckets in Netlify Blobs, and anyone seen in the last one or two buckets counts as listening. |
+
+### Bird anatomy and motion
+
+All eleven birds use representative adult lengths and wingspans from the [Cornell Lab identification guides](https://www.allaboutbirds.org/guide/). Each entry in `src/world/species.js` links its source. The models depict House Sparrow, Barn Swallow, American Robin, Eastern Bluebird, American Goldfinch, American Crow, Rock Pigeon, European Starling, Northern Cardinal, Black-capped Chickadee, and Ring-billed Gull. Where plumage differs, these are adult males in breeding plumage. Dimensions represent typical adults; real individuals vary.
+
+The models use a continuous, skinned surface from breast through neck and skull. Species profiles were sculpted using real adult photographs from the Cornell Lab / Macaulay Library; exact reference links are recorded in `scripts/bird-reference-sources.tsv`. Bills have species-specific cross sections, eyes sit flush in the skull, and folded wings use overlapping coverts and flight feathers. Smooth lighting replaces the former toon material, leaving the pixel pass to supply the lofi appearance. These are illustrative models, not anatomical scans.
+
+The rig normalizes bill-to-tail length before applying the common scale, so long-tailed species and broad-winged species keep their own proportions. The tallest perched bird determines a shared wire-clearance limit. Crows and gulls have room reserved for their full size; changing the bird selection or resizing repacks the perches. Movement is an illustrative approximation: quick songbird scans and bounds, pigeon steps and head thrusts, deliberate crow strokes, and long gull glides. Landing and departure still happen on the exact musical beat.
+
+Run `npm test` for geometry, wing symmetry, perch spacing, resizing and all eleven motion lifecycles. With the dev server running, open `/scripts/bird-study.html` for the development-only anatomy comparison, individual photographs beside the models, flight and landing checks. Reference photographs load from Cornell and are not bundled in the production build.
 
 ### Songs
 
