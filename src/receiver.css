@@ -1,0 +1,65 @@
+/* TV layout: big type, safe from overscan, no menus or cursor */
+body.tv {
+  cursor: none;
+}
+
+body.tv .toast {
+  left: 5vw;
+  top: 6vh;
+  max-width: 40vw;
+  padding: 1.6vh 1.6vw 1.8vh;
+}
+
+body.tv .toast .kicker {
+  font-size: max(12px, 1.25vh);
+}
+
+body.tv .toast .t {
+  font-size: max(26px, 3.6vh);
+  margin-top: 0.6vh;
+}
+
+body.tv .toast .s {
+  font-size: max(17px, 2.2vh);
+  margin-top: 0.5vh;
+}
+
+.tv-mark {
+  position: fixed;
+  right: 5vw;
+  bottom: 6vh;
+  display: flex;
+  align-items: center;
+  gap: 0.6vw;
+  font-family: 'Silkscreen', monospace;
+  font-size: max(11px, 1.3vh);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(241, 231, 208, 0.78);
+  background: rgba(13, 11, 26, 0.5);
+  padding: 0.7vh 0.9vw;
+}
+
+.tv-mark .sep {
+  opacity: 0.6;
+}
+
+.tv-hint {
+  display: none;
+}
+
+body.preview .tv-hint {
+  display: block;
+  position: fixed;
+  left: 50%;
+  bottom: 6vh;
+  transform: translateX(-50%);
+  font: 16px 'Pixelify Sans', monospace;
+  color: var(--cream);
+  background: var(--panel);
+  padding: 8px 14px;
+}
+
+body.preview.heard .tv-hint {
+  display: none;
+}

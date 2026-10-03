@@ -5,7 +5,7 @@
 //   fonts        cache first once fetched
 //   everything else same-origin: stale-while-revalidate
 //   /api/*       never cached (live listener count)
-const CACHE = 'birdsongs-v1';
+const CACHE = 'birdsongs-v2';
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/favicon.ico', '/icons/icon-192.png', '/songs/worried-shoes.mid'];
 
 self.addEventListener('install', (event) => {
@@ -53,14 +53,16 @@ const cacheFirst = async (req) => {
   return res;
 };
 
+// pages are cached by path (so /receiver.html never replaces the main page)
+const pageKey = (req) => new URL(req.url).pathname;
 const networkFirst = async (req) => {
   const c = await caches.open(CACHE);
   try {
     const res = await fetch(req);
-    if (res.ok) c.put(req.mode === 'navigate' ? '/' : req, res.clone());
+    if (res.ok) c.put(pageKey(req), res.clone());
     return res;
   } catch {
-    return (await c.match(req.mode === 'navigate' ? '/' : req)) || (await c.match('/')) || Response.error();
+    return (await c.match(pageKey(req))) || (await c.match('/')) || Response.error();
   }
 };
 

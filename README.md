@@ -122,6 +122,30 @@ Regenerating the art:
 - `npm run icons` redraws every icon from `src/ui/icon-art.json`.
 - `npm run share-images` re-renders `og.png`, the install screenshots and the scene icons from the running app. Start `npm run dev` first and pass its URL.
 
+### Cast to a TV (Google Cast)
+
+Casting works like YouTube, not like screen mirroring:
+
+- The Chromecast loads `/receiver.html` from the web and runs the whole radio itself, drawing and making the sound.
+- The site becomes a remote: every panel control drives the TV, the phone goes quiet, and the panel shows what the TV is playing.
+- Close the page and the TV keeps playing. Reopen it and it rejoins the session. "Stop casting" ends it.
+
+The pieces:
+
+- `src/receiver.js` is the TV side: a Cast custom receiver with no menus, big type and a 30 fps cap.
+- `src/ui/cast.js` is the site side: the Cast button, which only appears when a Cast device is on the network.
+- Both share `src/core.js`. They talk over the custom channel `urn:x-cast:games.superfun.birdsongs`, sending JSON `state` / `skip` / `reshuffle` / `hello` messages one way and `status` messages back.
+
+Setup, once:
+
+1. In the [Google Cast SDK Developer Console](https://cast.google.com/publish) (a one-time $5 registration), add a **Custom Receiver** with the URL `https://birdsongs.superfun.games/receiver.html`.
+2. Put its App ID in `src/config.js`, or in a Netlify environment variable `VITE_CAST_APP_ID`.
+3. Until the app is published in the console, it only works on Cast devices registered there as test devices (by serial number).
+
+Casting from a web page works in Chrome and Edge (desktop and Android). iPhones can't cast from Safari.
+
+To preview the TV page in a normal browser, open `/receiver.html?scene=seaside` and click for sound.
+
 ### Videos
 
 `node scripts/record-video.mjs <demo|rainy-dusk|seaside|snowfall> [dev-server-url]` records 1080p60 MP4s with sound into `media/` (gitignored):

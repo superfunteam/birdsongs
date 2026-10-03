@@ -1,181 +1,128 @@
 import './style.css';
-import { PixelRenderer } from './render/pixel.js';
-import { Stage, DAY_LENGTH } from './world/stage.js';
-import { WEATHER } from './world/atmosphere.js';
+import { createBirdsongs, BIRDS, sceneIndex } from './core.js';
 import { SCENES } from './world/scenes.js';
-import { AudioEngine } from './audio/engine.js';
-import { Conductor } from './music/conductor.js';
-import { SONGS, MIDI_SONGS } from './music/songs.js';
-import { loadMidiSong, readMidi, arrangeMidi } from './music/midi.js';
-import { SPECIES } from './world/species.js';
 import { Controls, loadSettings } from './ui/controls.js';
 import { startPresence } from './ui/presence.js';
 import { LiveIcon } from './ui/live-icon.js';
 import { setupInstall, setupShare } from './ui/install.js';
-
-const clock = () => performance.now() / 1000;
+import { setupCast } from './ui/cast.js';
 
 const settings = loadSettings();
 
 // links can open a particular moment: ?scene=seaside&song=clair-de-lune&birds=gull&silhouette=1
 const params = new URLSearchParams(location.search);
-if (params.has('scene')) {
-  const want = params.get('scene');
-  const i = SCENES.findIndex((sc) => sc.id === want);
-  if (i >= 0) settings.scene = i;
-  else if (/^\d+$/.test(want)) settings.scene = +want;
-}
+if (params.has('scene')) settings.scene = sceneIndex(params.get('scene'));
 if (params.has('birds')) settings.bird = params.get('birds');
 for (const key of ['silhouette', 'shuffle', 'notes']) if (params.has(key)) settings[key] = params.get(key) !== '0';
-settings.scene = Math.max(0, Math.min(SCENES.length - 1, settings.scene | 0));
+settings.scene = sceneIndex(settings.scene | 0);
 
-const canvas = document.getElementById('stage');
-let pixel;
+let ui = null;
+let cast = { connected: false, send: () => {} };
+const liveIcon = new LiveIcon();
+
+let app;
 try {
-  pixel = new PixelRenderer(canvas);
+  app = createBirdsongs(
+    document.getElementById('stage'),
+    settings,
+    {
+      // while casting, the panel shows what the TV is playing instead
+      onSong: (song) => !cast.connected && ui?.showSong(song),
+      onSceneApplied: (scene, index) => {
+        ui?.setScene(index);
+        ui?.showScene(scene);
+      },
+      onFrame: (now) => liveIcon.update(now, app.stage.atmo),
+    },
+    { songId: params.get('song') },
+  );
 } catch (err) {
   document.querySelector('.tagline').textContent = 'this little radio needs WebGL, and this browser has it switched off.';
   document.getElementById('start').style.display = 'none';
   throw err;
 }
-const stage = new Stage(pixel);
-const audio = new AudioEngine();
-audio.musicOn = settings.music;
-audio.soundOn = settings.sound;
-audio.volume = settings.volume * settings.volume;
 
-let conductor = null;
-let ui = null;
-
-// bird picker: the scene's mix, or one kind everywhere
-const BIRDS = [
-  { id: 'mixed', label: 'all kinds' },
-  ...Object.entries(SPECIES).map(([id, sp]) => ({ id, label: sp.name.endsWith('ch') ? `${sp.name}es` : `${sp.name}s` })),
-];
-if (!BIRDS.some((b) => b.id === settings.bird)) settings.bird = 'mixed';
-stage.birdKind = settings.bird;
-stage.shuffle = settings.shuffle;
-stage.pips.enabled = settings.notes;
-if (settings.silhouette) stage.setSilhouette(true);
-
-stage.setScene(settings.scene, clock(), true);
-
-conductor = new Conductor({
-  songs: SONGS,
-  flock: stage.flock,
-  getScene: () => stage.current,
-  audio,
-  onSong: (song) => ui?.showSong(song),
-});
-conductor.start(clock(), params.get('song'));
-
-stage.onThunder = ({ near, delay }) => audio.thunder(near, delay);
-stage.onWiresChanged = () => conductor.resetForScene(clock());
-// shuffle mode: a fresh set of wires in the hush between songs
-conductor.onGap = () => stage.reshuffle(clock());
-stage.onSceneApplied = (scene) => {
-  conductor?.resetForScene(clock());
-  ui?.setScene(stage.sceneIndex);
-  ui?.showScene(scene);
+// every control acts here, and on the TV when casting
+const tell = (msg) => cast.connected && cast.send(msg);
+const castState = () => {
+  const s = app.snapshot();
+  return { ...s, song: s.song?.id };
 };
 
 ui = new Controls({
   settings,
   scenes: SCENES,
-  onStart: async () => {
-    try {
-      await audio.start();
-      audio.setVolume(settings.volume);
-      audio.setMusic(settings.music);
-      audio.setSound(settings.sound);
-    } catch (err) {
-      console.warn('Audio could not start', err);
-    }
-    conductor.restart(clock());
-  },
   birds: BIRDS,
+  onStart: () => app.startAudio(),
   onToggle: (key, on) => {
-    if (key === 'music') audio.setMusic(on);
-    else if (key === 'sound') audio.setSound(on);
-    else if (key === 'notes') {
-      stage.pips.enabled = on;
-      if (!on) stage.pips.clear();
-    } else if (key === 'silhouette') stage.setSilhouette(on);
-    else if (key === 'shuffle') stage.setShuffle(on, clock());
+    if (key === 'music') cast.connected ? (settings.music = on) : app.setMusic(on);
+    else if (key === 'sound') cast.connected ? (settings.sound = on) : app.setSound(on);
+    else if (key === 'notes') app.setNotes(on);
+    else if (key === 'silhouette') app.setSilhouette(on);
+    else if (key === 'shuffle') app.setShuffle(on);
+    tell({ type: 'state', [key]: on });
   },
-  onVolume: (v) => audio.setVolume(v),
-  onScene: (delta) => stage.setScene(stage.sceneIndex + delta, clock()),
-  onBird: (id) => stage.setBirdKind(id),
-  onSkip: () => conductor.skip(clock()),
-  onReshuffle: () => stage.reshuffle(clock()),
+  onVolume: (v) => {
+    if (cast.connected) settings.volume = v;
+    else app.setVolume(v);
+    tell({ type: 'state', volume: v });
+  },
+  onScene: (delta) => {
+    const next = SCENES[(((app.stage.sceneIndex + delta) % SCENES.length) + SCENES.length) % SCENES.length];
+    app.nextScene(delta);
+    tell({ type: 'state', scene: next.id });
+  },
+  onBird: (id) => {
+    app.setBird(id);
+    tell({ type: 'state', bird: id });
+  },
+  onSkip: () => (cast.connected ? tell({ type: 'skip' }) : app.skip()),
+  onReshuffle: () => {
+    app.reshuffle();
+    tell({ type: 'reshuffle' });
+  },
 });
-ui.setScene(stage.sceneIndex);
+ui.setScene(app.stage.sceneIndex);
 
 if ('mediaSession' in navigator) {
   try {
-    navigator.mediaSession.setActionHandler('nexttrack', () => conductor.skip(clock()));
+    navigator.mediaSession.setActionHandler('nexttrack', () => ui.handlers.onSkip());
   } catch {
     // unsupported action
   }
 }
 
-// ------------------------------------------------------------------ render
-const liveIcon = new LiveIcon();
-let last = clock();
-function frame() {
-  const now = clock();
-  const dt = Math.min(0.1, Math.max(0, now - last));
-  last = now;
-  stage.update(now, dt);
-  liveIcon.update(now, stage.atmo);
-  pixel.render(stage.scene, stage.camera);
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-
-// ------------------------------------------------------------------ music clock
-// Runs on a timer (not rAF) so the music keeps going in a background tab.
-let lastAmb = 0;
-let lastPrune = 0;
-setInterval(() => {
-  const now = clock();
-  if (document.hidden && now - lastPrune > 1) {
-    lastPrune = now;
-    stage.flock.prune(now);
-  }
-  const latency = audio.ctx ? audio.ctx.outputLatency || audio.ctx.baseLatency || 0 : 0;
-  conductor.tick(now + latency, document.hidden ? 1.5 : 0.22);
-  if (audio.ctx && now - lastAmb > 0.1) {
-    lastAmb = now;
-    const w = stage.atmo.w;
-    audio.updateAmbience(now, {
-      rain: w.rain,
-      storm: w.storm,
-      wind: w.wind,
-      snow: w.snow,
-      scene: stage.current,
-    });
-  }
-}, 25);
-
-// ------------------------------------------------------------------ resize
-let resizeTimer = null;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    if (pixel.resize()) {
-      stage.resize(clock());
-      conductor.relayout();
+// ------------------------------------------------------------------ Google Cast
+let tvSong = null;
+cast = setupCast(document.getElementById('cast-wrap'), {
+  getState: castState,
+  onConnect: (name, resumed) => {
+    // the TV makes the sound now; this page goes quiet and becomes the remote
+    app.audio.setMusic(false);
+    app.audio.setSound(false);
+    document.body.classList.add('casting');
+    ui.toast('casting', name, resumed ? 'back in control of the TV' : 'close this page anytime: it keeps playing on the TV');
+  },
+  onDisconnect: () => {
+    document.body.classList.remove('casting');
+    app.audio.setMusic(settings.music);
+    app.audio.setSound(settings.sound);
+    tvSong = null;
+    if (app.conductor.song) ui.showSong(app.conductor.song);
+  },
+  onStatus: (msg) => {
+    if (msg.type !== 'status') return;
+    // mirror the TV here: scene, birds, modes (but keep this page silent)
+    const { song, music, sound, volume, ...look } = msg;
+    app.apply(look);
+    Object.assign(settings, { music, sound, volume });
+    ui.render();
+    if (song && song.id !== tvSong) {
+      tvSong = song.id;
+      ui.showSong(song);
     }
-  }, 120);
+  },
 });
-
-// ------------------------------------------------------------------ MIDI renditions
-for (const meta of MIDI_SONGS) {
-  loadMidiSong(meta)
-    .then((song) => conductor.addSong(song))
-    .catch(() => console.info(`[birdsongs] "${meta.title}" skipped: no MIDI at ${meta.midi}`));
-}
 
 // ------------------------------------------------------------------ listeners
 startPresence((n) => ui.setViewers(n));
@@ -186,11 +133,11 @@ setupInstall(document.getElementById('install'), notify);
 setupShare(document.getElementById('share'), {
   ...notify,
   link: () => {
-    const q = new URLSearchParams({ scene: stage.current.id });
-    if (conductor.song) q.set('song', conductor.song.id);
+    const q = new URLSearchParams({ scene: app.stage.current.id });
+    if (app.conductor.song) q.set('song', app.conductor.song.id);
     if (settings.bird !== 'mixed') q.set('birds', settings.bird);
     if (settings.silhouette) q.set('silhouette', '1');
-    const song = conductor.song ? `${conductor.song.title}, ` : '';
+    const song = app.conductor.song ? `${app.conductor.song.title}, ` : '';
     return { url: `${location.origin}/?${q}`, text: `${song}played by birds on a wire 🐦♪` };
   },
 });
@@ -211,27 +158,3 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
       .catch(() => {});
   });
 }
-
-// handy for poking at things from the console
-window.birdsongs = {
-  stage,
-  conductor,
-  audio,
-  setScene: (i) => stage.setScene(i, clock(), true),
-  setTime: (tod) => {
-    stage.sceneStart = clock() - ((((tod - stage.current.start) % 1) + 1) % 1) * DAY_LENGTH;
-  },
-  // try a MIDI rendition without deploying it: birdsongs.addMidi(arrayBuffer, { title, ... })
-  addMidi: (buffer, meta = {}) => {
-    const song = conductor.addSong({ id: `midi-${Date.now()}`, title: 'MIDI test', composer: '', year: '', instrument: 'kalimba', repeat: 1, ...meta, ...arrangeMidi(readMidi(buffer), meta) });
-    conductor.skip(clock());
-    return { title: song.title, notes: song.noteCount, seconds: Math.round(song.duration), bpm: song.bpm };
-  },
-  setWeather: (name) => {
-    const a = stage.atmo;
-    a.state = name;
-    a.w = { ...WEATHER[name] };
-    a.target = { ...WEATHER[name] };
-    a.nextChange = clock() + 600;
-  },
-};

@@ -271,6 +271,32 @@ body.idle {
   animation: pulse 2.4s steps(2) infinite;
 }
 
+/* Google Cast: the SDK draws the icon; we just size and colour it */
+.cast-wrap {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+}
+
+.cast-wrap[hidden] {
+  display: none;
+}
+
+google-cast-launcher {
+  display: block;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  --disconnected-color: var(--cream);
+  --connected-color: var(--amber);
+}
+
+body.casting .viewers .lbl::after {
+  content: ' · on tv';
+  color: var(--amber);
+}
+
 .dock-toggle {
   display: grid;
   place-items: center;

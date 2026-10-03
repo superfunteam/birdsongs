@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Birdsongs · on the TV</title>
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#1a1636" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&family=Silkscreen&display=swap" rel="stylesheet" />
+    <!-- Google Cast receiver framework: this page is what plays on the TV -->
+    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+  </head>
+  <body class="tv">
+    <canvas id="stage" aria-label="Pixel-art birds landing on and leaving power lines; each one plays a note"></canvas>
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <div class="tv-mark">
+      <span class="dot"></span><span id="viewers">1</span> listening
+      <span class="sep">·</span> birdsongs.superfun.games
+    </div>
+    <div class="tv-hint">click anywhere for sound</div>
+    <script type="module" src="/src/receiver.js"></script>
+  </body>
+</html>

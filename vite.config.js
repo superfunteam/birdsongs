@@ -15,7 +15,8 @@ const devPresence = {
 // Structured data for search/link previews, built from the real song list.
 const jsonLd = {
   name: 'json-ld',
-  async transformIndexHtml() {
+  async transformIndexHtml(html, ctx) {
+    if (ctx.path.includes('receiver')) return html; // the TV page isn't for search engines
     const { SONGS, MIDI_SONGS } = await import('./src/music/songs.js');
     const site = 'https://birdsongs.superfun.games/';
     const tracks = [...SONGS, ...MIDI_SONGS].map((s) => ({
@@ -50,5 +51,9 @@ export default defineConfig({
   plugins: [devPresence, jsonLd],
   build: {
     chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      // the site, and the page a Chromecast loads (Google Cast receiver)
+      input: { main: 'index.html', receiver: 'receiver.html' },
+    },
   },
 });
