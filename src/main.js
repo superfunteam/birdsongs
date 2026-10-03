@@ -10,10 +10,23 @@ import { loadMidiSong, readMidi, arrangeMidi } from './music/midi.js';
 import { SPECIES } from './world/species.js';
 import { Controls, loadSettings } from './ui/controls.js';
 import { startPresence } from './ui/presence.js';
+import { LiveIcon } from './ui/live-icon.js';
+import { setupInstall, setupShare } from './ui/install.js';
 
 const clock = () => performance.now() / 1000;
 
 const settings = loadSettings();
+
+// links can open a particular moment: ?scene=seaside&song=clair-de-lune&birds=gull&silhouette=1
+const params = new URLSearchParams(location.search);
+if (params.has('scene')) {
+  const want = params.get('scene');
+  const i = SCENES.findIndex((sc) => sc.id === want);
+  if (i >= 0) settings.scene = i;
+  else if (/^\d+$/.test(want)) settings.scene = +want;
+}
+if (params.has('birds')) settings.bird = params.get('birds');
+for (const key of ['silhouette', 'shuffle', 'notes']) if (params.has(key)) settings[key] = params.get(key) !== '0';
 settings.scene = Math.max(0, Math.min(SCENES.length - 1, settings.scene | 0));
 
 const canvas = document.getElementById('stage');
@@ -54,7 +67,7 @@ conductor = new Conductor({
   audio,
   onSong: (song) => ui?.showSong(song),
 });
-conductor.start(clock());
+conductor.start(clock(), params.get('song'));
 
 stage.onThunder = ({ near, delay }) => audio.thunder(near, delay);
 stage.onWiresChanged = () => conductor.resetForScene(clock());
@@ -107,12 +120,14 @@ if ('mediaSession' in navigator) {
 }
 
 // ------------------------------------------------------------------ render
+const liveIcon = new LiveIcon();
 let last = clock();
 function frame() {
   const now = clock();
   const dt = Math.min(0.1, Math.max(0, now - last));
   last = now;
   stage.update(now, dt);
+  liveIcon.update(now, stage.atmo);
   pixel.render(stage.scene, stage.camera);
   requestAnimationFrame(frame);
 }
@@ -164,6 +179,38 @@ for (const meta of MIDI_SONGS) {
 
 // ------------------------------------------------------------------ listeners
 startPresence((n) => ui.setViewers(n));
+
+// ------------------------------------------------------------------ install + share
+const notify = { flash: (t) => ui.flash(t), toast: (k, t, sub) => ui.toast(k, t, sub) };
+setupInstall(document.getElementById('install'), notify);
+setupShare(document.getElementById('share'), {
+  ...notify,
+  link: () => {
+    const q = new URLSearchParams({ scene: stage.current.id });
+    if (conductor.song) q.set('song', conductor.song.id);
+    if (settings.bird !== 'mixed') q.set('birds', settings.bird);
+    if (settings.silhouette) q.set('silhouette', '1');
+    const song = conductor.song ? `${conductor.song.title}, ` : '';
+    return { url: `${location.origin}/?${q}`, text: `${song}played by birds on a wire 🐦♪` };
+  },
+});
+
+// offline + installable (production only; dev keeps hot reload simple)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then(() => navigator.serviceWorker.ready)
+      .then((reg) => {
+        const urls = performance
+          .getEntriesByType('resource')
+          .map((e) => e.name)
+          .filter((u) => u.startsWith(`${location.origin}/assets/`) || u.includes('fonts.googleapis.com') || u.includes('fonts.gstatic.com'));
+        reg.active?.postMessage({ type: 'precache', urls: [`${location.origin}/`, ...urls] });
+      })
+      .catch(() => {});
+  });
+}
 
 // handy for poking at things from the console
 window.birdsongs = {

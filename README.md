@@ -101,6 +101,27 @@ r:4       a rest
 
 Stick to public-domain melodies (or ones you have rights to). Most well-known film scores and modern songs are still under copyright. Bars don't have to add up, so you can stretch notes and add rests for breathing room.
 
+### Install, share, links
+
+- **Install it as an app.** It's a full PWA, with a manifest, icons including maskable ones, install-sheet screenshots, and a long-press shortcut for each scene.
+  - Chrome/Edge/Android: the panel shows an **install** button.
+  - iOS: the button explains Share → Add to Home Screen.
+  - Installed, it opens full screen on phones and in its own window on desktop.
+- **Works offline.** A service worker keeps the app shell, fonts and songs cached after the first visit, and all sound is synthesised in the page.
+- **Share** opens the share sheet (or copies a link) for the exact moment you're in. Links can set:
+  - `?scene=` (`rainy-dusk`, `first-light`, `midnight-storm`, `snowfall`, `seaside`)
+  - `?song=` (song id), `?birds=` (species id)
+  - `?silhouette=1`, `?shuffle=1`, `?notes=0`
+- **Live touches:**
+  - The tab icon redraws its little sky to match the scene's time of day, and the browser theme colour follows the sky too.
+  - The tab title shows the song, e.g. `♪ Clair de lune · Birdsongs`.
+  - The lock-screen media controls show the song with the pixel icon.
+
+Regenerating the art:
+
+- `npm run icons` redraws every icon from `src/ui/icon-art.json`.
+- `npm run share-images` re-renders `og.png`, the install screenshots and the scene icons from the running app. Start `npm run dev` first and pass its URL.
+
 ### Keys
 
 `M` music · `S` sounds · `T` notes · `O` silhouette · `B` / `shift+B` birds · `W` shuffle wires · `R` new wires · `←/→` scene · `N` next song · `H` open/close the panel · `F` fullscreen. The corner button is always visible.

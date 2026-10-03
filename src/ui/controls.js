@@ -54,6 +54,8 @@ export class Controls {
     for (const id of ['scene-next', 'bird-next']) $(id).innerHTML = ICONS.next;
     $('skip').insertAdjacentHTML('afterbegin', ICONS.skip);
     $('reshuffle').insertAdjacentHTML('afterbegin', ICONS.shuffle);
+    $('share').insertAdjacentHTML('afterbegin', ICONS.share);
+    $('install').insertAdjacentHTML('afterbegin', ICONS.install);
     $('hide-ui').insertAdjacentHTML('afterbegin', ICONS.close);
     for (const t of TOGGLES) document.querySelector(`#${t.id} .ico`).innerHTML = ICONS[t.icon];
     document.querySelector('#t-full .ico').innerHTML = ICONS.full;
@@ -244,11 +246,16 @@ export class Controls {
     $('song-title').textContent = song.title;
     $('song-meta').textContent = `${song.composer} · ${song.year}`;
     this.toast('now playing', song.title, song.composer);
+    document.title = `♪ ${song.title} · Birdsongs`;
     if ('mediaSession' in navigator && window.MediaMetadata) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: song.title,
         artist: song.composer,
         album: 'Birdsongs',
+        artwork: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
       });
     }
   }

@@ -1,0 +1,37 @@
+{
+  "id": "/",
+  "name": "Birdsongs",
+  "short_name": "Birdsongs",
+  "description": "A lofi pixel-art radio. Every bird that lands on or leaves the power lines plays one note of a song you know. Rain, snow and thunder included.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#0b0a14",
+  "theme_color": "#1a1636",
+  "categories": ["music", "entertainment", "lifestyle"],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-200.png", "sizes": "200x200", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/maskable-480.png", "sizes": "480x480", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "screenshots": [
+    { "src": "/screenshots/wide.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "Birds on the wire at a rainy dusk, city lights coming on" },
+    { "src": "/screenshots/seaside.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "Silhouettes on the wire by the lighthouse at golden hour" },
+    { "src": "/screenshots/narrow.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Birdsongs on a phone" }
+  ],
+  "shortcuts": [
+    { "name": "Rainy Dusk", "short_name": "Rainy Dusk", "description": "City edge, streetlights coming on", "url": "/?scene=rainy-dusk&source=shortcut", "icons": [{ "src": "/icons/scene-rainy-dusk.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "First Light", "short_name": "First Light", "description": "Meadow at sunrise", "url": "/?scene=first-light&source=shortcut", "icons": [{ "src": "/icons/scene-first-light.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "Midnight Storm", "short_name": "Storm", "description": "Thunder over the valley", "url": "/?scene=midnight-storm&source=shortcut", "icons": [{ "src": "/icons/scene-midnight-storm.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "Snowfall", "short_name": "Snowfall", "description": "Quiet winter afternoon", "url": "/?scene=snowfall&source=shortcut", "icons": [{ "src": "/icons/scene-snowfall.png", "sizes": "96x96", "type": "image/png" }] },
+    { "name": "Seaside", "short_name": "Seaside", "description": "Lighthouse at golden hour", "url": "/?scene=seaside&source=shortcut", "icons": [{ "src": "/icons/scene-seaside.png", "sizes": "96x96", "type": "image/png" }] }
+  ]
+}

@@ -53,7 +53,10 @@ export class Conductor {
     return this.play ? this.songs[this.play.songIndex] : null;
   }
 
-  start(now) {
+  // songId (optional): open with this song, e.g. from a shared link
+  start(now, songId) {
+    const i = songId ? this.songs.findIndex((s) => s.id === songId) : -1;
+    if (i >= 0) this.order = [i, ...this.order.filter((x) => x !== i)];
     this.begin(this.order[0], now + FIRST_DELAY);
   }
 

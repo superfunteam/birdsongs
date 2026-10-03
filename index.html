@@ -1,21 +1,57 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Birdsongs · lofi melodies on the wire</title>
-    <meta name="description" content="A lofi pixel-art radio: birds land on power lines and every landing and take-off plays a note of a song you know. With rain." />
-    <meta name="theme-color" content="#0b0a14" />
-    <meta property="og:title" content="Birdsongs" />
-    <meta property="og:description" content="Lofi melodies on the wire. Every bird is a note." />
-    <meta property="og:type" content="website" />
+    <meta name="description" content="A lofi pixel-art radio. Birds land on and leave the power lines, and every landing and every take-off plays one note of a song you know. Rain, snow and thunder included." />
+    <link rel="canonical" href="https://birdsongs.superfun.games/" />
+    <meta name="application-name" content="Birdsongs" />
+    <meta name="author" content="Superfun" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <!-- the theme colour follows the sky while it plays (src/ui/live-icon.js) -->
+    <meta name="theme-color" content="#1a1636" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- icons + install -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Birdsongs" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Birdsongs" />
+    <meta property="og:title" content="Birdsongs · lofi melodies on the wire" />
+    <meta property="og:description" content="Every bird on the wire is a note. A lofi pixel-art radio of songs you know, played by birds landing and taking off, with rain." />
+    <meta property="og:url" content="https://birdsongs.superfun.games/" />
+    <meta property="og:image" content="https://birdsongs.superfun.games/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Pixel-art birds perched on sagging power lines against a dusk sky, under the title Birdsongs." />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Birdsongs · lofi melodies on the wire" />
+    <meta name="twitter:description" content="Every bird on the wire is a note. A lofi pixel-art radio, with rain." />
+    <meta name="twitter:image" content="https://birdsongs.superfun.games/og.png" />
+    <meta name="twitter:image:alt" content="Pixel-art birds perched on sagging power lines against a dusk sky, under the title Birdsongs." />
+
+    <!-- fonts: connect early, swap in when ready -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&family=Silkscreen&display=swap" />
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&family=Silkscreen&display=swap" rel="stylesheet" />
+    <!-- JSON-LD (app + playlist) is generated from the song list at build time: see vite.config.js -->
   </head>
   <body>
     <canvas id="stage" aria-label="Pixel-art birds landing on and leaving power lines; each one plays a note"></canvas>
+    <noscript><p class="noscript">Birdsongs is a little radio drawn and played live in your browser, so it needs JavaScript (and WebGL) switched on.</p></noscript>
 
     <div id="intro" class="intro">
       <div class="intro-card">
@@ -67,6 +103,8 @@
         <div class="actions">
           <button id="skip" class="text-btn" type="button" title="Next song (N)"><span>next song</span></button>
           <button id="reshuffle" class="text-btn" type="button" title="New wires (R)" hidden><span>new wires</span></button>
+          <button id="share" class="text-btn" type="button" title="Share this scene"><span>share</span></button>
+          <button id="install" class="text-btn" type="button" title="Install Birdsongs as an app" hidden><span>install</span></button>
         </div>
         <div class="keys">M music · S sounds · T notes<br />O silhouette · B birds<br />W shuffle · R new wires<br />←→ scene · N song · H panel · F full</div>
       </div>

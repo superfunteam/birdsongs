@@ -1,0 +1,21 @@
+/* BIRDSONGS */
+A lofi radio where every bird on the wire is a note.
+https://birdsongs.superfun.games
+
+/* TEAM */
+Made by: Superfun
+Built with: Claude (code, arrangements, and two of the songs)
+
+/* SONGS */
+Für Elise: Ludwig van Beethoven (public domain)
+Gymnopédie No. 1: Erik Satie (public domain)
+Canon in D: Johann Pachelbel (public domain)
+Wiegenlied (Brahms' Lullaby): Johannes Brahms (public domain)
+Clair de lune: Claude Debussy (public domain)
+Little Wire Waltz, Pocket Full of Rain: Claude, written for Birdsongs
+Worried Shoes: Daniel Johnston, after Karen O and the Kids (used with permission)
+
+/* THANKS */
+three.js, Vite, Netlify, Spotify's Basic Pitch, Meta's Demucs
+Pixelify Sans (Stefie Justprince) and Silkscreen (Jason Kottke), SIL Open Font License
+Birds drawn from field marks in the Cornell Lab's All About Birds

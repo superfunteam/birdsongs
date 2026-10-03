@@ -442,9 +442,22 @@ body.idle {
 }
 
 .actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
   margin-top: 10px;
+}
+
+.noscript {
+  position: fixed;
+  inset: auto 16px 40% 16px;
+  margin: 0 auto;
+  max-width: 420px;
+  padding: 16px;
+  text-align: center;
+  background: var(--panel);
+  color: var(--cream);
+  font: 16px/1.4 'Pixelify Sans', ui-monospace, monospace;
 }
 
 .text-btn[hidden] {
@@ -452,7 +465,6 @@ body.idle {
 }
 
 .text-btn {
-  flex: 1;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
