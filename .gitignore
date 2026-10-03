@@ -6,3 +6,6 @@ dist
 
 # source recordings used to make MIDI renditions: keep them local, never publish
 /songs/
+
+# rendered videos (scripts/record-video.mjs)
+/media/

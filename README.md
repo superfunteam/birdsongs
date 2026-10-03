@@ -122,6 +122,15 @@ Regenerating the art:
 - `npm run icons` redraws every icon from `src/ui/icon-art.json`.
 - `npm run share-images` re-renders `og.png`, the install screenshots and the scene icons from the running app. Start `npm run dev` first and pass its URL.
 
+### Videos
+
+`node scripts/record-video.mjs <demo|rainy-dusk|seaside|snowfall> [dev-server-url]` records 1080p60 MP4s with sound into `media/` (gitignored):
+
+- **Video:** Chrome's lossless screencast frames, re-timed to a constant 60 fps.
+- **Audio:** the app's own final mix, lined up by timestamp. Sound lands within a few milliseconds of the birds.
+- **Samples:** a scene at real time, with no UI except the song card.
+- **Demo:** a calm tour of the controls, guided by a pixel cursor.
+
 ### Keys
 
 `M` music · `S` sounds · `T` notes · `O` silhouette · `B` / `shift+B` birds · `W` shuffle wires · `R` new wires · `←/→` scene · `N` next song · `H` open/close the panel · `F` fullscreen. The corner button is always visible.

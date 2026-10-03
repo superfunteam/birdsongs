@@ -182,6 +182,7 @@ export class AudioEngine {
     makeup.gain.value = 1.7;
     this.master.connect(comp);
     comp.connect(makeup).connect(ctx.destination);
+    this.output = makeup; // the final mix, e.g. for recording
 
     // ---- music bus
     this.musicGate = ctx.createGain();
