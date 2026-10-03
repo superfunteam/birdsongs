@@ -67,16 +67,15 @@ if (!only || only === 'og') {
     document.head.insertAdjacentHTML(
       'beforeend',
       `<style>
-        .og { position: fixed; left: 44px; bottom: 40px; padding: 22px 30px 20px; background: rgba(13,11,26,.86);
+        .og { position: fixed; left: 44px; bottom: 40px; padding: 18px 34px 22px; background: rgba(13,11,26,.86);
           box-shadow: 0 -3px 0 0 #2e2848, 0 3px 0 0 #2e2848, -3px 0 0 0 #2e2848, 3px 0 0 0 #2e2848, 0 9px 0 0 rgba(0,0,0,.35); }
-        .og .k { font: 12px Silkscreen, monospace; letter-spacing: .1em; text-transform: uppercase; color: #ffb86b; }
-        .og h1 { margin: 6px 0 4px; font: 700 92px/1 'Pixelify Sans', monospace; color: #f1e7d0; text-shadow: 4px 4px 0 #3b2f5c, 8px 8px 0 rgba(0,0,0,.35); }
-        .og p { margin: 10px 0 0; font: 400 24px 'Pixelify Sans', monospace; color: #c9bfdc; }
+        .og h1 { margin: 0; font: 700 104px/1 'Pixelify Sans', monospace; color: #f1e7d0; text-shadow: 4px 4px 0 #3b2f5c, 8px 8px 0 rgba(0,0,0,.35); }
+        .og p { margin: 8px 0 0 4px; font: 500 38px/1 'Pixelify Sans', monospace; color: #ffb86b; letter-spacing: .02em; }
       </style>`,
     );
     const el = document.createElement('div');
     el.className = 'og';
-    el.innerHTML = '<div class="k">a lofi radio for the wires</div><h1>birdsongs</h1><p>every bird that lands or leaves plays a note ♪</p>';
+    el.innerHTML = '<h1>birdsongs</h1><p>lo-fi radio</p>';
     document.body.appendChild(el);
   });
   await page.evaluate(() => document.fonts.ready);
