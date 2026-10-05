@@ -50,6 +50,8 @@ const jsonLd = {
 export default defineConfig({
   plugins: [devPresence, jsonLd],
   build: {
+    // Cast/TV firmware can lag behind desktop Chrome
+    target: ['es2019', 'chrome76', 'safari13'],
     chunkSizeWarningLimit: 800,
     rollupOptions: {
       // the site, and the page a Chromecast loads (Google Cast receiver)

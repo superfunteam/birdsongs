@@ -1,3 +1,4 @@
+import './polyfills.js';
 import './style.css';
 import { createBirdsongs, BIRDS, sceneIndex } from './core.js';
 import { SCENES } from './world/scenes.js';
@@ -121,6 +122,11 @@ cast = setupCast(document.getElementById('cast-wrap'), {
     if (app.conductor.song) ui.showSong(app.conductor.song);
   },
   onStatus: (msg) => {
+    if (msg.type === 'diag') {
+      console.warn('[birdsongs] TV problem', msg);
+      ui.toast('the tv hit a problem', (msg.errors || [])[0]?.slice(0, 120) || 'unknown error', `${(msg.ua || '').match(/Chrome\/[\d.]+/)?.[0] || ''} · WebGL2 ${msg.webgl2}`);
+      return;
+    }
     if (msg.type !== 'status') return;
     // mirror the TV here: scene, birds, modes (but keep this page silent)
     const { song, music, sound, volume, ...look } = msg;

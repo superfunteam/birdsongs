@@ -63,3 +63,18 @@ body.preview .tv-hint {
 body.preview.heard .tv-hint {
   display: none;
 }
+
+.diag {
+  display: none;
+  position: fixed;
+  left: 5vw;
+  right: 5vw;
+  bottom: 14vh;
+  z-index: 50;
+  margin: 0;
+  padding: 2vh 2vw;
+  white-space: pre-wrap;
+  font: max(14px, 1.9vh) / 1.4 ui-monospace, monospace;
+  color: #f1e7d0;
+  background: rgba(13, 11, 26, 0.92);
+}

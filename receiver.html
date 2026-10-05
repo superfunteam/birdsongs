@@ -14,6 +14,51 @@
     <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
   </head>
   <body class="tv">
+    <!-- diagnostics: plain old JavaScript so it runs even if the app can't -->
+    <script>
+      (function () {
+        if (!Array.prototype.at) Array.prototype.at = function (i) { i = Math.trunc(i) || 0; return this[i < 0 ? this.length + i : i]; };
+        var d = { ua: navigator.userAgent, at: new Date().toISOString(), screen: [innerWidth, innerHeight, devicePixelRatio], errors: [] };
+        try {
+          var c = document.createElement('canvas');
+          var g2 = c.getContext('webgl2');
+          var g = g2 || c.getContext('webgl') || c.getContext('experimental-webgl');
+          d.webgl2 = !!g2;
+          d.webgl = !!g;
+          if (g) {
+            var dbg = g.getExtension('WEBGL_debug_renderer_info');
+            d.gpu = dbg ? g.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER);
+            d.floatExt = (g.getSupportedExtensions() || []).filter(function (e) { return /float|half/i.test(e); });
+          }
+        } catch (e) { d.webglError = String(e); }
+        d.audio = !!(window.AudioContext || window.webkitAudioContext);
+        window.__diag = d;
+        function show() {
+          var el = document.getElementById('diag');
+          if (!el) return;
+          el.style.display = 'block';
+          el.textContent = 'Birdsongs couldn\u2019t start on this TV:\n' + d.errors.join('\n') + '\n\n' + d.ua +
+            '\nWebGL2: ' + d.webgl2 + '   WebGL: ' + d.webgl + '   GPU: ' + (d.gpu || '?');
+        }
+        function send(stage) {
+          try {
+            d.stage = stage;
+            d.booted = !!window.__birdsongsBooted;
+            var x = new XMLHttpRequest();
+            x.open('POST', '/api/cast-log');
+            x.setRequestHeader('content-type', 'application/json');
+            x.send(JSON.stringify(d));
+          } catch (e) {}
+        }
+        window.addEventListener('error', function (e) { d.errors.push((e.message || String(e)) + ' @ ' + (e.filename || '') + ':' + (e.lineno || '')); show(); });
+        window.addEventListener('unhandledrejection', function (e) { var r = e.reason; d.errors.push('promise: ' + (r && (r.stack || r.message) || r)); show(); });
+        window.__diagShow = show;
+        window.__diagSend = send;
+        setTimeout(function () { if (!window.__birdsongsBooted) { d.errors.push('the app did not start within 10 s'); show(); } send('10s'); }, 10000);
+        setTimeout(function () { send('40s'); }, 40000);
+      })();
+    </script>
+    <pre id="diag" class="diag"></pre>
     <canvas id="stage" aria-label="Pixel-art birds landing on and leaving power lines; each one plays a note"></canvas>
     <div id="toast" class="toast" aria-live="polite"></div>
     <div class="tv-mark">

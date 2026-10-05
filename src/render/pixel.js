@@ -74,7 +74,9 @@ export class PixelRenderer {
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
       depthBuffer: true,
-      type: THREE.HalfFloatType,
+      // plain 8-bit: every GPU can render into it (half-float needs an
+      // extension many TV chips lack), and the post pass quantises anyway
+      type: THREE.UnsignedByteType,
     });
 
     this.uniforms = {
