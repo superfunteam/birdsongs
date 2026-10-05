@@ -2,10 +2,11 @@
 // from the web, so nothing is mirrored and this page can be closed: while
 // connected it's just a remote. Works in Chrome/Edge on desktop and Android.
 import { CAST_APP_ID, CAST_NAMESPACE } from '../config.js';
+import { ICONS } from './icons.js';
 
 const SDK = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
 
-// hooks: { getState(), onConnect(deviceName, resumed), onDisconnect(), onStatus(msg) }
+// hooks: { getState(), onConnect(deviceName, resumed), onDisconnect(), onStatus(msg), onNoDevices() }
 export function setupCast(wrap, hooks) {
   const api = { connected: false, send: () => {} };
   if (!CAST_APP_ID) return api;
@@ -20,12 +21,24 @@ export function setupCast(wrap, hooks) {
       autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
     });
 
-    // only show the button when there's something to cast to
+    // always show the button where casting is possible; dim it while no TV
+    // has been found (tapping it then opens Chrome's own Cast dialog, which
+    // says what it can and can't see)
     const showFor = (state) => {
-      wrap.hidden = state === CastState.NO_DEVICES_AVAILABLE;
+      wrap.hidden = false;
+      const none = state === CastState.NO_DEVICES_AVAILABLE;
+      wrap.classList.toggle('no-devices', none);
+      wrap.title = none ? 'No Cast devices found on this network yet' : 'Play on your TV';
     };
     showFor(ctx.getCastState());
     ctx.addEventListener(CastContextEventType.CAST_STATE_CHANGED, (e) => showFor(e.castState));
+    wrap.innerHTML = ICONS.cast;
+    wrap.addEventListener('click', () => {
+      // no TV found yet: explain instead of doing nothing
+      if (wrap.classList.contains('no-devices')) return hooks.onNoDevices?.();
+      // Chrome's own picker (it also offers "stop casting" while connected)
+      ctx.requestSession().catch(() => {});
+    });
 
     let session = null;
     const onMessage = (ns, raw) => {
@@ -46,10 +59,12 @@ export function setupCast(wrap, hooks) {
         const resumed = e.sessionState === SessionState.SESSION_RESUMED;
         // a fresh cast takes this page's moment; a rejoin just asks the TV what it's doing
         api.send(resumed ? { type: 'hello' } : { type: 'state', ...hooks.getState() });
+        wrap.innerHTML = ICONS.casting;
         hooks.onConnect?.(session.getCastDevice()?.friendlyName || 'your TV', resumed);
       } else if (e.sessionState === SessionState.SESSION_ENDED) {
         session = null;
         api.connected = false;
+        wrap.innerHTML = ICONS.cast;
         hooks.onDisconnect?.();
       }
     });

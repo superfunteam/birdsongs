@@ -96,6 +96,16 @@ if ('mediaSession' in navigator) {
 let tvSong = null;
 cast = setupCast(document.getElementById('cast-wrap'), {
   getState: castState,
+  onNoDevices: () => {
+    const mac = /Mac/.test(navigator.platform);
+    ui.toast(
+      'no tv found yet',
+      'Chrome can’t see a Cast device',
+      mac
+        ? 'Same Wi‑Fi as the TV? On a Mac, allow Chrome in System Settings → Privacy & Security → Local Network.'
+        : 'Make sure this device and the TV are on the same Wi‑Fi (not a guest network).',
+    );
+  },
   onConnect: (name, resumed) => {
     // the TV makes the sound now; this page goes quiet and becomes the remote
     app.audio.setMusic(false);

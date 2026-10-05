@@ -271,25 +271,30 @@ body.idle {
   animation: pulse 2.4s steps(2) infinite;
 }
 
-/* Google Cast: the SDK draws the icon; we just size and colour it */
+/* Google Cast button (our own pixel icon; it opens Chrome's device picker) */
 .cast-wrap {
   display: grid;
   place-items: center;
-  width: 30px;
+  width: 32px;
   height: 26px;
+  color: var(--cream);
 }
 
 .cast-wrap[hidden] {
   display: none;
 }
 
-google-cast-launcher {
-  display: block;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  --disconnected-color: var(--cream);
-  --connected-color: var(--amber);
+.cast-wrap:hover {
+  color: var(--amber);
+}
+
+.cast-wrap.no-devices {
+  opacity: 0.5;
+}
+
+body.casting .cast-wrap {
+  color: var(--amber);
+  background: rgba(255, 184, 107, 0.1);
 }
 
 body.casting .viewers .lbl::after {
