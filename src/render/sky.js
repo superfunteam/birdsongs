@@ -28,8 +28,6 @@ const VERT = /* glsl */ `
 `;
 
 const FRAG = /* glsl */ `
-  precision highp float;
-  precision highp int;
 
   uniform vec2 uRes;
   uniform float uTime;

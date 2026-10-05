@@ -9,6 +9,13 @@ import { createWings } from './bird-wings.js';
 export const birdMaterial = new THREE.MeshLambertMaterial({
   vertexColors: true, side: THREE.DoubleSide,
 });
+// GPUs on WebGL 1 without float textures (older Chromecasts) can't run
+// three.js skinning; there the neck is bent on the CPU instead (see cpuSkin).
+let cpuSkinning = false;
+export function setCpuSkinning(on) { cpuSkinning = on; }
+const HIDDEN = new THREE.MeshBasicMaterial({ visible: false });
+const _neck = new THREE.Matrix4();
+
 export const SILHOUETTE = new THREE.Color('#0b0a11');
 export function setBirdSilhouette(on) {
   birdMaterial.vertexColors = !on;
@@ -302,6 +309,7 @@ export class BirdRig {
     skin.bind(new THREE.Skeleton([base,this.neck]));
     skin.frustumCulled=false;
     this.skin=skin;
+    if(cpuSkinning) this.setupCpuSkin(g.bodyG);
     this.neck.add(new THREE.Mesh(g.headG,birdMaterial));
     this.tail=new THREE.Group();this.tail.position.set(...a.tailBase,0);this.tail.add(new THREE.Mesh(g.tailG,birdMaterial));this.body.add(this.tail);
     this.wings=[];
@@ -382,7 +390,47 @@ export class BirdRig {
         segment.scale.set(radius,length,radius);
       }
     }
+    if(this.cpuBody) this.cpuSkin();
   }
 
-  dispose() { this.skin.skeleton.dispose();this.root.removeFromParent(); }
+  // Draw a plain copy of the body and bend only its neck-weighted vertices:
+  // the base bone never moves relative to the body, so skinned = p + w(Np - p)
+  // with N the neck's motion since binding.
+  setupCpuSkin(bodyG) {
+    const geo=bodyG.clone();
+    const idx=bodyG.attributes.skinIndex, wt=bodyG.attributes.skinWeight, pos=bodyG.attributes.position;
+    geo.deleteAttribute('skinIndex');geo.deleteAttribute('skinWeight');
+    const verts=[], bind=[], weights=[];
+    for(let i=0;i<pos.count;i++) {
+      let w=0;
+      for(let k=0;k<4;k++) if(idx.getComponent(i,k)===1) w+=wt.getComponent(i,k);
+      if(w>1e-4) { verts.push(i);bind.push(pos.getX(i),pos.getY(i),pos.getZ(i));weights.push(w); }
+    }
+    this.cpuSkinData={verts:Uint32Array.from(verts),bind:Float32Array.from(bind),weights:Float32Array.from(weights)};
+    this.neck.updateMatrix();
+    this.neckBindInverse=this.neck.matrix.clone().invert();
+    this.lastNeck=new Float32Array(16).fill(NaN);
+    this.cpuBody=new THREE.Mesh(geo,birdMaterial);this.cpuBody.frustumCulled=false;
+    this.skin.material=HIDDEN; // keep the skinned mesh only for its bones
+    this.skin.add(this.cpuBody);
+  }
+
+  cpuSkin() {
+    this.neck.updateMatrix();
+    const e=_neck.multiplyMatrices(this.neck.matrix,this.neckBindInverse).elements, last=this.lastNeck;
+    let same=true;
+    for(let i=0;i<16;i++) if(Math.abs(e[i]-last[i])>1e-6) { same=false;break; }
+    if(same) return;
+    last.set(e);
+    const {verts,bind,weights}=this.cpuSkinData, attr=this.cpuBody.geometry.attributes.position, out=attr.array;
+    for(let k=0;k<verts.length;k++) {
+      const x=bind[k*3], y=bind[k*3+1], z=bind[k*3+2], w=weights[k], o=verts[k]*3;
+      out[o]=x+(e[0]*x+e[4]*y+e[8]*z+e[12]-x)*w;
+      out[o+1]=y+(e[1]*x+e[5]*y+e[9]*z+e[13]-y)*w;
+      out[o+2]=z+(e[2]*x+e[6]*y+e[10]*z+e[14]-z)*w;
+    }
+    attr.needsUpdate=true;
+  }
+
+  dispose() { this.skin.skeleton.dispose();this.cpuBody?.geometry.dispose();this.root.removeFromParent(); }
 }

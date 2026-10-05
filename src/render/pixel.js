@@ -17,7 +17,6 @@ const POST_VERT = /* glsl */ `
 `;
 
 const POST_FRAG = /* glsl */ `
-  precision highp float;
   uniform sampler2D tDiffuse;
   uniform vec2 uRes;
   uniform float uLevels;
@@ -58,8 +57,9 @@ const POST_FRAG = /* glsl */ `
 `;
 
 export class PixelRenderer {
-  constructor(canvas) {
+  constructor(canvas, { budget = PIXEL_BUDGET } = {}) {
     this.canvas = canvas;
+    this.budget = budget;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: false,
@@ -115,7 +115,7 @@ export class PixelRenderer {
     const vh = window.innerHeight;
     const dw = vw * dpr;
     const dh = vh * dpr;
-    let scale = Math.max(2, Math.round(Math.sqrt((dw * dh) / PIXEL_BUDGET)));
+    let scale = Math.max(2, Math.round(Math.sqrt((dw * dh) / this.budget)));
     // narrow (portrait) screens still need enough pixels across for the birds
     scale = Math.max(2, Math.min(scale, Math.floor(dw / 270)));
     const w = Math.ceil(dw / scale);

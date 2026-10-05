@@ -4,7 +4,8 @@ import * as THREE from 'three';
 // Perched birds weigh their span down (string Green's function) and every
 // landing / take-off plucks it so the line visibly rings with the note.
 
-const ramp = new THREE.DataTexture(new Uint8Array([90, 170, 255]), 3, 1, THREE.RedFormat);
+// RGBA rather than RedFormat: WebGL 1 (older Chromecasts) has no single-channel textures
+const ramp = new THREE.DataTexture(new Uint8Array([90, 90, 90, 255, 170, 170, 170, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
 ramp.minFilter = THREE.NearestFilter;
 ramp.magFilter = THREE.NearestFilter;
 ramp.generateMipmaps = false;

@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^8.1.0",
-    "three": "^0.170.0"
+    "three": "^0.162.0"
   },
   "devDependencies": {
     "puppeteer-core": "^23.11.1",

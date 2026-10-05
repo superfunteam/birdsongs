@@ -9,6 +9,7 @@ import { Conductor } from './music/conductor.js';
 import { SONGS, MIDI_SONGS } from './music/songs.js';
 import { loadMidiSong, readMidi, arrangeMidi } from './music/midi.js';
 import { SPECIES } from './world/species.js';
+import { setCpuSkinning } from './world/bird-rig.js';
 
 export const clock = () => performance.now() / 1000;
 
@@ -29,7 +30,9 @@ export const sceneIndex = (idOrIndex) => {
 // hooks: { onSong(song), onSceneApplied(scene, index), onFrame(now) }
 // options: { songId, maxFps }
 export function createBirdsongs(canvas, settings, hooks = {}, options = {}) {
-  const pixel = new PixelRenderer(canvas); // throws without WebGL
+  const pixel = new PixelRenderer(canvas, options.pixelBudget ? { budget: options.pixelBudget } : {}); // throws without WebGL
+  // WebGL 1 GPUs can't do three.js skinning; bend the birds' necks on the CPU
+  setCpuSkinning(!pixel.renderer.capabilities.isWebGL2);
   const stage = new Stage(pixel);
   const audio = new AudioEngine();
   audio.musicOn = settings.music;

@@ -92,7 +92,8 @@ try {
         frames++;
       },
     },
-    { songId: params.get('song'), maxFps: onCast ? 30 : 0 },
+    // Cast GPUs are modest: fewer, chunkier art pixels and 30 fps
+    { songId: params.get('song'), maxFps: onCast ? 30 : 0, pixelBudget: onCast ? 42000 : 0 },
   );
   window.__birdsongsBooted = true;
 } catch (err) {
@@ -102,9 +103,17 @@ try {
 }
 
 // 3. health for the diagnostics report (read back with `netlify blobs:list cast-logs`)
+let lastFrames = 0;
+let lastAt = performance.now();
 const health = () => {
   if (!app) return;
   const r = app.pixel.renderer;
+  const now = performance.now();
+  diag.fps = Math.round(((frames - lastFrames) / (now - lastAt)) * 10000) / 10;
+  lastFrames = frames;
+  lastAt = now;
+  const gl = r.getContext();
+  diag.extensions = gl.getSupportedExtensions();
   Object.assign(diag, {
     frames,
     art: [app.pixel.width, app.pixel.height, app.pixel.scale],
