@@ -139,7 +139,7 @@ The pieces:
 Setup, once:
 
 1. In the [Google Cast SDK Developer Console](https://cast.google.com/publish) (a one-time $5 registration), add a **Custom Receiver** with the URL `https://birdsongs.superfun.games/receiver.html`.
-2. Put its App ID in `src/config.js`, or in a Netlify environment variable `VITE_CAST_APP_ID`.
+2. Put its App ID in `src/config.js` (it's `C44BED16`), or override it with a Netlify environment variable `VITE_CAST_APP_ID`.
 3. Until the app is published in the console, it only works on Cast devices registered there as test devices (by serial number).
 
 Casting from a web page works in Chrome and Edge (desktop and Android). iPhones can't cast from Safari.
